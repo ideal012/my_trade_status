@@ -47,6 +47,8 @@ test('a first-release database is backed up and migrated without losing data', (
     // closing fields are optional now (open trades)
     const cols = Object.fromEntries(db.prepare('PRAGMA table_info(trades)').all().map((c) => [c.name, c]));
     for (const c of ['exit_price', 'close_time_utc', 'profit']) assert.equal(cols[c].notnull, 0, c);
+    assert.ok(cols.risk_amount, 'risk_amount column added');
+    assert.equal(db.prepare('PRAGMA user_version').get().user_version, 2);
     db.prepare("INSERT INTO trades (account_id, symbol, direction, lot, entry_price, open_time_utc) VALUES (1, 'GBPUSD', 'sell', 1, 1.3, '2024-02-01T00:00:00.000Z')").run();
 
     // foreign keys still hold after the rebuild
@@ -72,5 +74,20 @@ test('opening an up-to-date database again does not back up or migrate', () => {
   openDb(file).close();
   openDb(file).close();
   assert.throws(() => readdirSync(join(dir, 'backups')));
+  rmSync(dir, { recursive: true, force: true });
+});
+
+test('a version-1 database gets the risk column without a rebuild', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'journal-mig-'));
+  const file = join(dir, 'journal.db');
+  const v1 = new DatabaseSync(file);
+  v1.exec(V0.replace(/exit_price REAL NOT NULL/, 'exit_price REAL').replace(/close_time_utc TEXT NOT NULL/, 'close_time_utc TEXT').replace(/profit REAL NOT NULL/, 'profit REAL'));
+  v1.exec('PRAGMA user_version = 1');
+  v1.close();
+  const db = openDb(file);
+  assert.ok(db.prepare('PRAGMA table_info(trades)').all().some((c) => c.name === 'risk_amount'));
+  assert.equal(db.prepare('SELECT COUNT(*) AS n FROM trades').get().n, 1);
+  db.close();
+  assert.throws(() => readdirSync(join(dir, 'backups'))); // adding a column needs no backup
   rmSync(dir, { recursive: true, force: true });
 });

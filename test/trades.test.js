@@ -125,3 +125,10 @@ test('an open trade can be closed later and reopened', async () => {
   const reopened = await s.call('PUT', `/api/trades/${c.json.id}`, { exit_price: '', close_time_utc: '', profit: '' });
   assert.equal(reopened.json.exit_price, null);
 });
+
+test('risk amount is optional, must be positive', async () => {
+  const ok = await s.call('POST', '/api/trades', sampleTrade({ risk_amount: '35.5' }));
+  assert.equal(ok.json.risk_amount, 35.5);
+  assert.equal((await s.call('POST', '/api/trades', sampleTrade())).json.risk_amount, null);
+  assert.equal((await s.call('POST', '/api/trades', sampleTrade({ risk_amount: -1 }))).status, 400);
+});

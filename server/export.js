@@ -18,7 +18,7 @@ export const toCsv = (headers, rows) => [headers, ...rows].map((r) => r.map(cell
 
 const HEADERS = [
   'ticket', 'symbol', 'direction', 'lot', 'entry_price', 'sl', 'tp', 'exit_price', 'open_time_utc', 'close_time_utc',
-  'profit', 'commission', 'swap', 'net', 'strategy', 'checklist_done', 'checklist_total', 'tags', 'emotion', 'notes', 'source',
+  'profit', 'commission', 'swap', 'net', 'strategy', 'checklist_done', 'checklist_total', 'tags', 'emotion', 'notes', 'source', 'risk_amount',
 ];
 
 export function exportRoutes(db, dataDir) {
@@ -30,7 +30,7 @@ export function exportRoutes(db, dataDir) {
         return [
           t.ticket, t.symbol, t.direction, t.lot, t.entry_price, t.sl, t.tp, t.exit_price, t.open_time_utc, t.close_time_utc,
           t.profit, t.commission, t.swap, t.profit == null ? null : Math.round((t.profit + t.commission + t.swap) * 1e8) / 1e8,
-          st?.name, st ? t.checklist_done.length : null, st?.checklist.length ?? null, t.tags.join(';'), t.emotion, t.notes, t.source,
+          st?.name, st ? t.checklist_done.length : null, st?.checklist.length ?? null, t.tags.join(';'), t.emotion, t.notes, t.source, t.risk_amount,
         ];
       });
       // BOM so Excel opens the file as UTF-8 (Thai text stays readable)

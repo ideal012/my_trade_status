@@ -4,7 +4,7 @@ import { removeUploads } from './screenshots.js';
 const COLS = [
   'account_id', 'ticket', 'symbol', 'direction', 'lot', 'entry_price', 'sl', 'tp', 'exit_price',
   'open_time_utc', 'close_time_utc', 'profit', 'commission', 'swap', 'strategy_id',
-  'checklist_done', 'tags', 'emotion', 'notes', 'source',
+  'checklist_done', 'tags', 'emotion', 'notes', 'source', 'risk_amount',
 ];
 
 const toNum = (v) => (v === '' || v == null ? null : Number(v));
@@ -46,6 +46,7 @@ export function cleanTrade(db, b = {}) {
   const tp = field('tp', 'TP', { positive: true });
   const commission = field('commission', 'Commission', { fallback: 0 });
   const swap = field('swap', 'Swap', { fallback: 0 });
+  const risk_amount = field('risk_amount', 'ความเสี่ยง ($)', { positive: true });
 
   const open_time_utc = isoTime(b.open_time_utc);
   const close_time_utc = filled(b.close_time_utc) ? isoTime(b.close_time_utc) : null;
@@ -74,6 +75,7 @@ export function cleanTrade(db, b = {}) {
     emotion: String(b.emotion ?? '').trim().slice(0, 40),
     notes: String(b.notes ?? '').slice(0, 5000),
     source,
+    risk_amount,
   };
 }
 

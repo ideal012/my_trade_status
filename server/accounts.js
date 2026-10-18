@@ -52,6 +52,11 @@ export function accountRoutes(db) {
         }
         db.prepare("INSERT INTO settings (key, value) VALUES ('timezone', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value").run(String(body.timezone));
       }
+      if (body?.max_risk_pct !== undefined) {
+        const pct = Number(body.max_risk_pct);
+        if (body.max_risk_pct === '' || !Number.isFinite(pct) || pct <= 0 || pct > 100) throw new HttpError(400, 'กฎความเสี่ยงต้องเป็นตัวเลขมากกว่า 0 และไม่เกิน 100 (%)');
+        db.prepare("INSERT INTO settings (key, value) VALUES ('max_risk_pct', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value").run(String(pct));
+      }
       return settings(db);
     }],
   ];

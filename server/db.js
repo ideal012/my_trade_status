@@ -27,6 +27,7 @@ CREATE TABLE IF NOT EXISTS ${name} (
   notes TEXT NOT NULL DEFAULT '',
   source TEXT NOT NULL DEFAULT 'manual',
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  risk_amount REAL,
   UNIQUE (account_id, ticket)
 );`;
 
@@ -65,8 +66,18 @@ const V0_COLUMNS = 'id, account_id, ticket, symbol, direction, lot, entry_price,
 
 // Schema changes for databases created by older versions. PRAGMA user_version records what was applied.
 function migrate(db, file) {
-  if (db.prepare('PRAGMA user_version').get().user_version >= 1) return;
+  const version = db.prepare('PRAGMA user_version').get().user_version;
+  if (version < 1) toV1(db, file);
+  if (version < 2) {
+    // v2: money at risk typed by the user (optional)
+    if (!db.prepare('PRAGMA table_info(trades)').all().some((c) => c.name === 'risk_amount')) {
+      db.exec('ALTER TABLE trades ADD COLUMN risk_amount REAL');
+    }
+    db.exec('PRAGMA user_version = 2');
+  }
+}
 
+function toV1(db, file) {
   // v1: allow open trades. SQLite cannot drop NOT NULL in place, so the table is rebuilt
   // (the documented 12-step procedure) after a copy of the whole database is saved.
   const exitCol = db.prepare('PRAGMA table_info(trades)').all().find((c) => c.name === 'exit_price');
@@ -107,5 +118,6 @@ export function openDb(file) {
     db.prepare("INSERT INTO accounts (name, currency, initial_capital) VALUES ('บัญชีหลัก', 'USD', 1000)").run();
   }
   db.prepare("INSERT OR IGNORE INTO settings (key, value) VALUES ('timezone', 'Asia/Bangkok')").run();
+  db.prepare("INSERT OR IGNORE INTO settings (key, value) VALUES ('max_risk_pct', '2')").run();
   return db;
 }

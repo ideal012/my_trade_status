@@ -30,6 +30,13 @@ export async function render(view) {
       </label>
     </div>
 
+    <h2 style="margin-top:24px">กฎความเสี่ยง</h2>
+    <div class="card">
+      <label>เสี่ยงได้สูงสุดต่อไม้ (% ของทุน) — ไม้ที่เกินจะถูกเน้นสีแดง
+        <input id="max-risk" type="number" step="any" min="0.01" max="100" value="${state.settings.max_risk_pct ?? 2}" style="max-width:160px">
+      </label>
+    </div>
+
     <h2 style="margin-top:24px">บัญชี</h2>
     ${state.accounts.map(accountForm)}
     <h2 style="margin-top:24px">เพิ่มบัญชีใหม่</h2>
@@ -53,6 +60,14 @@ export async function render(view) {
       const r = await api('/api/backup', { method: 'POST' });
       msg.textContent = `สำรองแล้ว: data/${r.file.replaceAll('\\', '/')} (ไม่รวมรูป screenshot ให้คัดลอกโฟลเดอร์ data/uploads ด้วย)`;
     } catch (err) { msg.textContent = err.message; }
+  });
+
+  view.querySelector('#max-risk').addEventListener('change', async (e) => {
+    try {
+      await api('/api/settings', { method: 'PUT', body: { max_risk_pct: e.target.value } });
+      await loadBase();
+      toast(`กฎความเสี่ยง ${e.target.value}% ต่อไม้`);
+    } catch (err) { toast(err.message); }
   });
 
   view.querySelector('#tz').addEventListener('change', async (e) => {

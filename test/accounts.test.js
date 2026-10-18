@@ -46,3 +46,11 @@ test('timezone setting is validated and saved', async () => {
   assert.equal(ok.json.timezone, 'Europe/London');
   assert.equal((await s.call('GET', '/api/settings')).json.timezone, 'Europe/London');
 });
+
+test('max risk % rule is validated and saved, default 2', async () => {
+  assert.equal((await s.call('GET', '/api/settings')).json.max_risk_pct, '2');
+  for (const bad of [0, -1, 101, 'abc']) {
+    assert.equal((await s.call('PUT', '/api/settings', { max_risk_pct: bad })).status, 400, String(bad));
+  }
+  assert.equal((await s.call('PUT', '/api/settings', { max_risk_pct: 1.5 })).json.max_risk_pct, '1.5');
+});

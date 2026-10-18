@@ -1,6 +1,6 @@
-import { html, raw, state, api, toast, armDelete, num, signed } from './ui.js';
+import { html, raw, state, api, toast, armDelete, num, signed, maxRisk } from './ui.js';
 import { localToUtc, toLocal } from './time.js';
-import { pips, plannedRR, realizedR, netPnl } from './calc.js';
+import { pips, plannedRR, realizedR, netPnl, riskMoney } from './calc.js';
 
 const EMOTIONS = ['มั่นใจ', 'ปกติ', 'ลังเล', 'กลัว', 'โลภ', 'รีบ', 'แก้แค้นตลาด', 'เบื่อ'];
 const SYMBOLS = ['EURUSD', 'GBPUSD', 'USDJPY', 'XAUUSD', 'AUDUSD', 'USDCAD', 'USDCHF', 'NZDUSD', 'EURJPY', 'GBPJPY'];
@@ -11,7 +11,8 @@ const field = (label, name, { type = 'number', value = '', required = false, att
   </label>`;
 
 // Opens the add/edit dialog. trade = null for a new trade. onSaved runs after a successful save.
-export function openTradeForm(trade, onSaved) {
+// equity: current account equity, used to preview the risk as a % of capital.
+export function openTradeForm(trade, onSaved, equity) {
   const tz = state.settings.timezone;
   const t = trade ?? {};
   // active strategies, plus the trade's own even if archived
@@ -41,6 +42,7 @@ export function openTradeForm(trade, onSaved) {
           ${field('Take Profit (TP)', 'tp', { value: t.tp })}
           ${field('เวลาเปิด', 'open_time', { type: 'datetime-local', value: t.open_time_utc ? toLocal(t.open_time_utc, tz) : nowLocal, required: true })}
           ${field('Ticket (ถ้ามี)', 'ticket', { type: 'text', value: t.ticket })}
+          ${field('ความเสี่ยง ($) ถ้าโดน SL — เว้นว่างให้คำนวณจากผลไม้', 'risk_amount', { value: t.risk_amount })}
         </div>
       </fieldset>
 
@@ -173,17 +175,22 @@ export function openTradeForm(trade, onSaved) {
     const t = {
       symbol: f.symbol || 'EURUSD', direction: f.direction, entry_price: n(f.entry_price),
       sl: n(f.sl), tp: n(f.tp), exit_price: n(f.exit_price),
-      profit: n(f.profit) ?? 0, commission: n(f.commission) ?? 0, swap: n(f.swap) ?? 0,
+      profit: n(f.profit), commission: n(f.commission) ?? 0, swap: n(f.swap) ?? 0, risk_amount: n(f.risk_amount),
     };
     if (t.entry_price == null) return;
     const bits = [];
     const rr = plannedRR(t);
     bits.push(`RR ตามแผน ${rr == null ? '—' : '1 : ' + num(rr)}`);
+    const money = riskMoney(t.exit_price != null && t.profit == null ? { ...t, exit_price: null } : t);
+    if (money != null) {
+      const pct = equity > 0 ? (money / equity) * 100 : null;
+      bits.push(`เสี่ยง ${num(money)}${pct == null ? '' : ` (${num(pct)}% ของทุนตอนนี้${pct > maxRisk() ? ' — เกินกฎ!' : ''})`}`);
+    }
     if (t.exit_price != null) {
       bits.push(`ผลจริง ${signed(pips(t), 1)} pips`);
       const r = realizedR(t);
       if (r != null) bits.push(`${signed(r)} R`);
-      bits.push(`สุทธิ ${signed(netPnl(t))}`);
+      if (t.profit != null) bits.push(`สุทธิ ${signed(netPnl(t))}`);
     }
     preview.textContent = bits.join(' · ');
   };
@@ -202,7 +209,7 @@ export function openTradeForm(trade, onSaved) {
       profit: f.profit, commission: f.commission, swap: f.swap,
       strategy_id: f.strategy_id || null,
       checklist_done: new FormData(form).getAll('ck').map(Number),
-      tags: f.tags, emotion: f.emotion, notes: f.notes,
+      tags: f.tags, emotion: f.emotion, notes: f.notes, risk_amount: f.risk_amount,
     };
     try {
       const saved = await api(trade ? `/api/trades/${trade.id}` : '/api/trades', { method: trade ? 'PUT' : 'POST', body });

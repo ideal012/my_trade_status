@@ -1,6 +1,6 @@
-import { html, raw, setHtml, state, loadTrades, num, signed, tone, price } from '../lib/ui.js';
+import { html, raw, setHtml, state, account, maxRisk, loadTrades, num, signed, tone, price } from '../lib/ui.js';
 import { fmtTime, dayKey } from '../lib/time.js';
-import { netPnl, pips, plannedRR, realizedR, session, isOpen } from '../lib/calc.js';
+import { netPnl, pips, plannedRR, realizedR, session, isOpen, riskPcts, stats } from '../lib/calc.js';
 import { openTradeForm } from '../lib/trade-form.js';
 
 const strategyName = (t) => state.strategies.find((s) => s.id === t.strategy_id)?.name ?? '—';
@@ -18,6 +18,13 @@ export async function render(view, { query }) {
     && (!symbolFilter || t.symbol.includes(symbolFilter)));
 
   const openCount = trades.filter(isOpen).length;
+  const risk = riskPcts(all, account().initial_capital);
+  const equity = stats(all, account().initial_capital).equity;
+  const riskCell = (t) => {
+    const p = risk.get(t.id);
+    if (p == null) return '—';
+    return p > maxRisk() ? html`<span class="neg"><b>${num(p)}%</b></span> <span class="badge sell">เกินกฎ</span>` : `${num(p)}%`;
+  };
 
   const row = (t) => html`
     <tr class="clickable" data-id="${t.id}">
@@ -32,6 +39,7 @@ export async function render(view, { query }) {
       <td class="num ${tone(pips(t))}">${signed(pips(t), 1)}</td>
       <td class="num">${plannedRR(t) == null ? '—' : num(plannedRR(t))}</td>
       <td class="num ${tone(realizedR(t))}">${realizedR(t) == null ? '—' : signed(realizedR(t))}</td>
+      <td class="num">${riskCell(t)}</td>
       <td>${session(t.open_time_utc)}</td>
       <td>${strategyName(t)}</td>
       <td>${checklistText(t)}</td>
@@ -57,7 +65,7 @@ export async function render(view, { query }) {
           <thead><tr>
             <th>เวลาเปิด</th><th>คู่เงิน</th><th>ทิศทาง</th><th class="num">Lot</th>
             <th class="num">Entry</th><th class="num">SL</th><th class="num">TP</th><th class="num">Exit</th>
-            <th class="num">Pips</th><th class="num">RR แผน</th><th class="num">R จริง</th><th>Session</th><th>กลยุทธ์</th><th>Checklist</th><th>รูป</th>
+            <th class="num">Pips</th><th class="num">RR แผน</th><th class="num">R จริง</th><th class="num">เสี่ยง %</th><th>Session</th><th>กลยุทธ์</th><th>Checklist</th><th>รูป</th>
             <th class="num">สุทธิ</th>
           </tr></thead>
           <tbody>${trades.map(row)}</tbody>
@@ -65,7 +73,7 @@ export async function render(view, { query }) {
     </div>`);
 
   const again = () => render(view, { query });
-  view.querySelector('#add').addEventListener('click', () => openTradeForm(null, again));
+  view.querySelector('#add').addEventListener('click', () => openTradeForm(null, again, equity));
   view.querySelector('#symbol-filter').addEventListener('change', (e) => {
     const q = new URLSearchParams(query);
     e.target.value.trim() ? q.set('symbol', e.target.value.trim()) : q.delete('symbol');
@@ -73,6 +81,6 @@ export async function render(view, { query }) {
   });
   view.querySelector('tbody')?.addEventListener('click', (e) => {
     const tr = e.target.closest('tr[data-id]');
-    if (tr) openTradeForm(all.find((t) => t.id === Number(tr.dataset.id)), again);
+    if (tr) openTradeForm(all.find((t) => t.id === Number(tr.dataset.id)), again, equity);
   });
 }

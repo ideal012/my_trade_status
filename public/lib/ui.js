@@ -17,6 +17,7 @@ export const setHtml = (el, tpl) => { el.innerHTML = tpl.s; };
 
 export const state = { accounts: [], accountId: null, settings: { timezone: 'Asia/Bangkok' }, strategies: [] };
 export const account = () => state.accounts.find((a) => a.id === state.accountId);
+export const maxRisk = () => Number(state.settings.max_risk_pct) || 2;
 
 export async function api(path, { method = 'GET', body } = {}) {
   const res = await fetch(path, {

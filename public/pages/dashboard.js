@@ -1,6 +1,6 @@
-import { html, setHtml, state, account, loadTrades, num, signed, tone, pct, makeChart, COLORS } from '../lib/ui.js';
+import { html, setHtml, state, account, maxRisk, loadTrades, num, signed, tone, pct, makeChart, COLORS } from '../lib/ui.js';
 import { dayKey, fmtTime } from '../lib/time.js';
-import { stats, netPnl, inRange, equitySeries, dailyPnl, monthGrid, isOpen } from '../lib/calc.js';
+import { stats, netPnl, inRange, equitySeries, dailyPnl, monthGrid, isOpen, riskPcts, riskSummary } from '../lib/calc.js';
 import { readRange, rangeFilter, rangeBar, bindRangeBar } from '../lib/range.js';
 
 const MONTHS = ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'];
@@ -29,6 +29,7 @@ export async function render(view) {
   const startCapital = acc.initial_capital + before.reduce((s, t) => s + netPnl(t), 0);
   const st = stats(inside, startCapital);
   const now = stats(all, acc.initial_capital);
+  const risk = riskSummary(inside, riskPcts(all, acc.initial_capital), maxRisk());
   const cur = acc.currency;
 
   setHtml(view, html`
@@ -54,6 +55,8 @@ export async function render(view) {
       ${card('Max Drawdown', st.count ? `−${num(st.maxDrawdown.amount)}` : '—', { cls: st.maxDrawdown.amount ? 'neg' : '', hint: st.count ? `−${num(st.maxDrawdown.pct)}% จากจุดสูงสุด` : '' })}
       ${card('ชนะติดกันสูงสุด', st.maxWinStreak, { hint: 'ไม้' })}
       ${card('แพ้ติดกันสูงสุด', st.maxLossStreak, { hint: 'ไม้' })}
+      ${card('ความเสี่ยงเฉลี่ยต่อไม้', risk.avg == null ? '—' : `${num(risk.avg)}%`, { cls: risk.avg > maxRisk() ? 'neg' : '', hint: `% ของทุนก่อนเข้าไม้ · กฎ ≤ ${num(maxRisk())}%` })}
+      ${card('ไม้ที่เสี่ยงเกินกฎ', risk.known ? risk.over : '—', { cls: risk.over ? 'neg' : 'pos', hint: risk.known ? `จาก ${risk.known} ไม้ที่คำนวณได้` : 'ต้องมี SL' })}
     </div>
 
     <div class="card">

@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { netPnl, pipSize, pips, plannedRR, realizedR, session, stats, equitySeries, rangeBounds, inRange, dailyPnl, monthGrid, groupBy, isOpen } from '../public/lib/calc.js';
+import { netPnl, pipSize, pips, plannedRR, realizedR, session, stats, equitySeries, rangeBounds, inRange, dailyPnl, monthGrid, groupBy, isOpen, riskMoney, riskPcts, riskSummary } from '../public/lib/calc.js';
 
 const close = (a, b, eps = 1e-6) => assert.ok(Math.abs(a - b) < eps, `${a} !~ ${b}`);
 const T = (over = {}) => ({
@@ -214,4 +214,41 @@ test('statistics, equity, calendar and groups skip open trades', () => {
   assert.deepEqual(dailyPnl(withOpen, 'UTC'), dailyPnl(SET, 'UTC'));
   assert.deepEqual(groupBy(withOpen, (t) => t.symbol), groupBy(SET, (t) => t.symbol));
   assert.ok(!inRange(OPEN, { from: '2024-01-01', to: null }, 'UTC'));
+});
+
+// ---- risk per trade (Task 15) ----
+test('money at risk comes from the trade itself: profit per price unit x SL distance', () => {
+  // buy 1.1000 -> 1.1080 made 80, so 1 price unit = 10000; SL 0.0050 away -> 50 at risk
+  close(riskMoney(T({ profit: 80 })), 50);
+  // a losing sell gives the same answer
+  close(riskMoney(T({ direction: 'sell', entry_price: 1.1, sl: 1.105, exit_price: 1.108, profit: -80 })), 50);
+  // JPY quote currency: the profit already includes the conversion
+  close(riskMoney(T({ symbol: 'USDJPY', entry_price: 150, sl: 149.5, exit_price: 151, profit: 66 })), 33);
+});
+
+test('a typed risk amount wins; otherwise unknown cases give null', () => {
+  close(riskMoney(T({ risk_amount: 25 })), 25);
+  close(riskMoney(T({ exit_price: null, profit: null, risk_amount: 40 })), 40); // open trade
+  assert.equal(riskMoney(T({ exit_price: null, profit: null })), null);
+  assert.equal(riskMoney(T({ sl: null })), null);
+  assert.equal(riskMoney(T({ exit_price: 1.1, profit: 0 })), null); // closed at entry: no price move to scale from
+  assert.equal(riskMoney(T({ profit: -5 })), null); // price moved up on a buy but profit is negative: inconsistent
+});
+
+test('risk % uses the equity just before the trade opened', () => {
+  const a = { ...N(100, 1), id: 1 }; // closes day 1, +100
+  const b = { ...N(0, 2, { risk_amount: 22 }), id: 2 }; // opens day 2 with equity 1100 -> 2%
+  const c = { ...N(0, 1, { risk_amount: 30, open_time_utc: '2024-03-01T09:00:00.000Z' }), id: 3 }; // opens before a closes -> 3% of 1000
+  const pct = riskPcts([b, a, c], 1000);
+  close(pct.get(2), 2);
+  close(pct.get(3), 3);
+});
+
+test('risk summary: average and trades over the limit', () => {
+  const pct = new Map([[1, 1], [2, 3], [3, null]]);
+  const sum = riskSummary([{ id: 1 }, { id: 2 }, { id: 3 }], pct, 2);
+  close(sum.avg, 2);
+  assert.equal(sum.over, 1);
+  assert.equal(sum.known, 2);
+  assert.equal(riskSummary([], new Map(), 2).avg, null);
 });

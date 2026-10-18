@@ -184,3 +184,41 @@ export function groupBy(trades, keyFn) {
     };
   });
 }
+
+// ---- risk per trade ----
+
+// Money lost if the SL is hit. A typed risk_amount wins. Otherwise it is derived from the trade's own
+// result: profit / price distance moved = money per price unit (lot size and currency conversion are
+// already inside the profit), times the SL distance. Unknown -> null.
+export function riskMoney(t) {
+  if (t.risk_amount != null) return t.risk_amount;
+  if (isOpen(t) || t.sl == null || t.profit == null || !risk(t)) return null;
+  const moved = (t.exit_price - t.entry_price) * dir(t);
+  if (!moved) return null;
+  const perUnit = t.profit / moved;
+  return perUnit > 0 ? perUnit * risk(t) : null;
+}
+
+// Map trade id -> risk as % of equity just before the trade opened
+// (initial capital + net of every trade that closed before that moment).
+export function riskPcts(trades, initial) {
+  const closes = byClose(trades);
+  const out = new Map();
+  let i = 0;
+  let equity = initial;
+  for (const t of [...trades].sort((a, b) => a.open_time_utc.localeCompare(b.open_time_utc))) {
+    while (i < closes.length && closes[i].close_time_utc <= t.open_time_utc) equity += netPnl(closes[i++]);
+    const money = riskMoney(t);
+    out.set(t.id, money == null || equity <= 0 ? null : (money / equity) * 100);
+  }
+  return out;
+}
+
+export function riskSummary(trades, pcts, maxPct) {
+  const known = trades.map((t) => pcts.get(t.id)).filter((p) => p != null);
+  return {
+    known: known.length,
+    avg: known.length ? known.reduce((a, b) => a + b, 0) / known.length : null,
+    over: known.filter((p) => p > maxPct).length,
+  };
+}
