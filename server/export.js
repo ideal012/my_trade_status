@@ -3,6 +3,7 @@ import { join } from 'node:path';
 import { Reply } from './http.js';
 import { listTrades } from './trades.js';
 import { parseStrategy } from './strategies.js';
+import { stamp } from './db.js';
 
 // One CSV cell. Text starting with = + - @ would run as a formula in Excel, so it gets a leading '.
 function cell(v) {
@@ -28,7 +29,7 @@ export function exportRoutes(db, dataDir) {
         const st = strategies.get(t.strategy_id);
         return [
           t.ticket, t.symbol, t.direction, t.lot, t.entry_price, t.sl, t.tp, t.exit_price, t.open_time_utc, t.close_time_utc,
-          t.profit, t.commission, t.swap, Math.round((t.profit + t.commission + t.swap) * 1e8) / 1e8,
+          t.profit, t.commission, t.swap, t.profit == null ? null : Math.round((t.profit + t.commission + t.swap) * 1e8) / 1e8,
           st?.name, st ? t.checklist_done.length : null, st?.checklist.length ?? null, t.tags.join(';'), t.emotion, t.notes, t.source,
         ];
       });
@@ -37,8 +38,7 @@ export function exportRoutes(db, dataDir) {
     }],
     ['POST', '/api/backup', () => {
       mkdirSync(join(dataDir, 'backups'), { recursive: true });
-      const stamp = new Date().toISOString().replace(/[-:]/g, '').replace('T', '-').slice(0, 15);
-      const file = join('backups', `journal-${stamp}.db`);
+      const file = join('backups', `journal-${stamp()}.db`);
       db.prepare('VACUUM INTO ?').run(join(dataDir, file));
       return { file };
     }],

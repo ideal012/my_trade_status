@@ -2,7 +2,11 @@ import { dayKey, weekdayOf } from './time.js';
 
 // Trade maths. Pure functions (no DOM, no DB) so they run in the browser and under node:test.
 
-export const netPnl = (t) => t.profit + t.commission + t.swap;
+// A trade without an exit price is still open: it has a plan (RR) but no result yet,
+// and every statistic below leaves it out.
+export const isOpen = (t) => t.exit_price == null;
+
+export const netPnl = (t) => (isOpen(t) || t.profit == null ? null : t.profit + t.commission + t.swap);
 
 const dir = (t) => (t.direction === 'buy' ? 1 : -1);
 
@@ -14,7 +18,7 @@ export function pipSize(symbol) {
   return 0.0001;
 }
 
-export const pips = (t) => ((t.exit_price - t.entry_price) * dir(t)) / pipSize(t.symbol);
+export const pips = (t) => (isOpen(t) ? null : ((t.exit_price - t.entry_price) * dir(t)) / pipSize(t.symbol));
 
 const risk = (t) => (t.sl == null ? 0 : Math.abs(t.entry_price - t.sl));
 
@@ -23,7 +27,7 @@ export function plannedRR(t) {
 }
 
 export function realizedR(t) {
-  return t.sl == null || !risk(t) ? null : ((t.exit_price - t.entry_price) * dir(t)) / risk(t);
+  return isOpen(t) || t.sl == null || !risk(t) ? null : ((t.exit_price - t.entry_price) * dir(t)) / risk(t);
 }
 
 // ponytail: fixed UTC hour bands, ignores DST shifts of London/NY opens (about 1h error half the year).
@@ -37,7 +41,7 @@ export function session(openIso) {
 
 // ---- aggregate statistics ----
 
-const byClose = (trades) => [...trades].sort((a, b) => a.close_time_utc.localeCompare(b.close_time_utc) || a.id - b.id);
+const byClose = (trades) => trades.filter((t) => !isOpen(t)).sort((a, b) => a.close_time_utc.localeCompare(b.close_time_utc) || a.id - b.id);
 
 // Equity after each closed trade (in close order), starting from the initial capital.
 export function equitySeries(trades, initial) {
@@ -124,6 +128,7 @@ export function rangeBounds(kind, timeZone, now = new Date()) {
 
 export function inRange(trade, range, timeZone) {
   if (!range) return true;
+  if (isOpen(trade)) return false;
   const day = dayKey(trade.close_time_utc, timeZone);
   return (!range.from || day >= range.from) && (!range.to || day <= range.to);
 }
@@ -134,6 +139,7 @@ export function inRange(trade, range, timeZone) {
 export function dailyPnl(trades, timeZone) {
   const days = {};
   for (const t of trades) {
+    if (isOpen(t)) continue;
     const d = (days[dayKey(t.close_time_utc, timeZone)] ??= { net: 0, count: 0 });
     d.net += netPnl(t);
     d.count += 1;
@@ -157,6 +163,7 @@ export function monthGrid(year, month) {
 export function groupBy(trades, keyFn) {
   const groups = new Map();
   for (const t of trades) {
+    if (isOpen(t)) continue;
     for (const key of [keyFn(t)].flat()) {
       if (!groups.has(key)) groups.set(key, []);
       groups.get(key).push(t);

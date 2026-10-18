@@ -1,6 +1,6 @@
 import { html, raw, setHtml, state, loadTrades, num, signed, tone, price } from '../lib/ui.js';
 import { fmtTime, dayKey } from '../lib/time.js';
-import { netPnl, pips, plannedRR, realizedR, session } from '../lib/calc.js';
+import { netPnl, pips, plannedRR, realizedR, session, isOpen } from '../lib/calc.js';
 import { openTradeForm } from '../lib/trade-form.js';
 
 const strategyName = (t) => state.strategies.find((s) => s.id === t.strategy_id)?.name ?? '—';
@@ -14,8 +14,10 @@ export async function render(view, { query }) {
   const day = query.get('day');
   const all = await loadTrades();
   const symbolFilter = (query.get('symbol') ?? '').toUpperCase();
-  const trades = all.filter((t) => (!day || dayKey(t.close_time_utc, tz) === day)
+  const trades = all.filter((t) => (!day || (!isOpen(t) && dayKey(t.close_time_utc, tz) === day))
     && (!symbolFilter || t.symbol.includes(symbolFilter)));
+
+  const openCount = trades.filter(isOpen).length;
 
   const row = (t) => html`
     <tr class="clickable" data-id="${t.id}">
@@ -34,14 +36,14 @@ export async function render(view, { query }) {
       <td>${strategyName(t)}</td>
       <td>${checklistText(t)}</td>
       <td>${t.screenshots.length ? `${t.screenshots.length} รูป` : ''}</td>
-      <td class="num ${tone(netPnl(t))}"><b>${signed(netPnl(t))}</b></td>
+      <td class="num ${tone(netPnl(t))}">${isOpen(t) ? html`<span class="badge muted">เปิดอยู่</span>` : html`<b>${signed(netPnl(t))}</b>`}</td>
     </tr>`;
 
   setHtml(view, html`
     <div class="page-head">
       <div>
         <h1>รายการเทรด</h1>
-        <p class="sub">${trades.length} ไม้${day ? ` · ปิดวันที่ ${day}` : ''} · เวลาตามโซน ${tz}</p>
+        <p class="sub">${trades.length} ไม้${openCount ? ` · เปิดอยู่ ${openCount}` : ''}${day ? ` · ปิดวันที่ ${day}` : ''} · เวลาตามโซน ${tz}</p>
       </div>
       <button class="primary" id="add">+ เพิ่มเทรด</button>
     </div>

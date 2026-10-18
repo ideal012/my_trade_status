@@ -1,6 +1,6 @@
 import { html, raw, setHtml, state, loadTrades, num, signed, tone, pct, makeChart, COLORS } from '../lib/ui.js';
 import { hourOf, weekdayOf } from '../lib/time.js';
-import { groupBy, inRange, session } from '../lib/calc.js';
+import { groupBy, inRange, session, isOpen } from '../lib/calc.js';
 import { readRange, rangeFilter, rangeBar, bindRangeBar } from '../lib/range.js';
 
 const WEEKDAYS = ['จันทร์', 'อังคาร', 'พุธ', 'พฤหัสบดี', 'ศุกร์', 'เสาร์', 'อาทิตย์'];
@@ -33,7 +33,7 @@ export async function render(view) {
   const tz = state.settings.timezone;
   const sel = readRange();
   const { bounds, label } = rangeFilter(sel, tz);
-  const trades = (await loadTrades()).filter((t) => inRange(t, bounds, tz));
+  const trades = (await loadTrades()).filter((t) => !isOpen(t) && inRange(t, bounds, tz));
   const tabs = TABS(tz);
   const tab = tabs.find((x) => x.id === tabId) ?? tabs[0];
 

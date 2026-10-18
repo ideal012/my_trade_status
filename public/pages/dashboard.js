@@ -1,6 +1,6 @@
 import { html, setHtml, state, account, loadTrades, num, signed, tone, pct, makeChart, COLORS } from '../lib/ui.js';
 import { dayKey, fmtTime } from '../lib/time.js';
-import { stats, netPnl, inRange, equitySeries, dailyPnl, monthGrid } from '../lib/calc.js';
+import { stats, netPnl, inRange, equitySeries, dailyPnl, monthGrid, isOpen } from '../lib/calc.js';
 import { readRange, rangeFilter, rangeBar, bindRangeBar } from '../lib/range.js';
 
 const MONTHS = ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'];
@@ -17,7 +17,9 @@ const card = (label, value, { cls = '', hint = '', big = false } = {}) => html`
 export async function render(view) {
   const tz = state.settings.timezone;
   const acc = account();
-  const all = await loadTrades();
+  const loaded = await loadTrades();
+  const openCount = loaded.filter(isOpen).length;
+  const all = loaded.filter((t) => !isOpen(t)); // statistics count closed trades only
   const sel = readRange();
   const { bounds, label } = rangeFilter(sel, tz);
 
@@ -35,6 +37,7 @@ export async function render(view) {
       ${rangeBar(sel)}
     </div>
 
+    ${openCount ? html`<p class="sub">มี <a href="#/trades">${openCount} ไม้ที่ยังเปิดอยู่</a> — ยังไม่นับในสถิติจนกว่าจะปิด</p>` : ''}
     ${all.length ? '' : html`<div class="card empty">ยังไม่มีเทรด — ไปที่ <a href="#/trades">รายการเทรด</a> เพื่อเพิ่มไม้แรก หรือใช้ <a href="#/import">Import</a> จาก MT4/MT5</div>`}
 
     <div class="grid">

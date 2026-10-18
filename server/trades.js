@@ -34,17 +34,23 @@ export function cleanTrade(db, b = {}) {
   };
   const lot = field('lot', 'ขนาด lot', { required: true, positive: true });
   const entry_price = field('entry_price', 'ราคาเข้า', { required: true, positive: true });
-  const exit_price = field('exit_price', 'ราคาออก', { required: true, positive: true });
-  const profit = field('profit', 'กำไร/ขาดทุน', { required: true });
+  // a trade is open while its result (exit price, close time, profit) is left empty; once any is filled all are needed
+  const filled = (v) => v !== '' && v != null;
+  const closing = [b.exit_price, b.close_time_utc, b.profit].some(filled);
+  if (closing && ![b.exit_price, b.close_time_utc, b.profit].every(filled)) {
+    errors.push('ไม้ที่ปิดแล้วต้องกรอก ราคาออก เวลาปิด และกำไร/ขาดทุน ให้ครบ (ยังไม่ปิดไม้: เว้นว่างทั้งสามช่อง)');
+  }
+  const exit_price = field('exit_price', 'ราคาออก', { positive: true });
+  const profit = field('profit', 'กำไร/ขาดทุน');
   const sl = field('sl', 'SL', { positive: true });
   const tp = field('tp', 'TP', { positive: true });
   const commission = field('commission', 'Commission', { fallback: 0 });
   const swap = field('swap', 'Swap', { fallback: 0 });
 
   const open_time_utc = isoTime(b.open_time_utc);
-  const close_time_utc = isoTime(b.close_time_utc);
+  const close_time_utc = filled(b.close_time_utc) ? isoTime(b.close_time_utc) : null;
   check(open_time_utc, 'กรอกเวลาเปิดให้ถูกต้อง');
-  check(close_time_utc, 'กรอกเวลาปิดให้ถูกต้อง');
+  check(!filled(b.close_time_utc) || close_time_utc, 'กรอกเวลาปิดให้ถูกต้อง');
   check(!open_time_utc || !close_time_utc || close_time_utc >= open_time_utc, 'เวลาปิดต้องไม่ก่อนเวลาเปิด');
 
   const account_id = Number(b.account_id);

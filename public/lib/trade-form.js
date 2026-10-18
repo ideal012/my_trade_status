@@ -45,10 +45,12 @@ export function openTradeForm(trade, onSaved) {
       </fieldset>
 
       <fieldset><legend>② ผลลัพธ์</legend>
+        <p class="sub" style="margin:0 0 8px">ยังไม่ปิดไม้? เว้นราคาออก เวลาปิด และกำไรไว้ก่อน แล้วกลับมาแก้ตอนปิด</p>
         <div class="fields">
-          ${field('ราคาออก (Exit)', 'exit_price', { value: t.exit_price, required: true })}
-          ${field('เวลาปิด', 'close_time', { type: 'datetime-local', value: t.close_time_utc ? toLocal(t.close_time_utc, tz) : nowLocal, required: true })}
-          ${field('กำไร/ขาดทุน (ไม่รวมค่าธรรมเนียม)', 'profit', { value: t.profit, required: true })}
+          ${field('ราคาออก (Exit)', 'exit_price', { value: t.exit_price })}
+          ${field('เวลาปิด', 'close_time', { type: 'datetime-local', value: t.close_time_utc ? toLocal(t.close_time_utc, tz) : '' })}
+          ${field('กำไร/ขาดทุน (ไม่รวมค่าธรรมเนียม)', 'profit', { value: t.profit })}
+          <label>&nbsp;<button type="button" data-act="close-now">เวลาปิด = ตอนนี้</button></label>
           ${field('Commission (ใส่ติดลบ)', 'commission', { value: t.commission ?? 0 })}
           ${field('Swap', 'swap', { value: t.swap ?? 0 })}
         </div>
@@ -101,6 +103,9 @@ export function openTradeForm(trade, onSaved) {
   const errBox = dlg.querySelector('.form-error');
   const close = () => { dlg.close(); dlg.remove(); };
   dlg.querySelector('[data-act=cancel]').addEventListener('click', close);
+  dlg.querySelector('[data-act=close-now]').addEventListener('click', () => {
+    form.elements.close_time.value = toLocal(new Date().toISOString(), tz);
+  });
   dlg.addEventListener('cancel', () => dlg.remove());
 
   const del = dlg.querySelector('[data-act=delete]');

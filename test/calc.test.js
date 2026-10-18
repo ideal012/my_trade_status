@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { netPnl, pipSize, pips, plannedRR, realizedR, session, stats, equitySeries, rangeBounds, inRange, dailyPnl, monthGrid, groupBy } from '../public/lib/calc.js';
+import { netPnl, pipSize, pips, plannedRR, realizedR, session, stats, equitySeries, rangeBounds, inRange, dailyPnl, monthGrid, groupBy, isOpen } from '../public/lib/calc.js';
 
 const close = (a, b, eps = 1e-6) => assert.ok(Math.abs(a - b) < eps, `${a} !~ ${b}`);
 const T = (over = {}) => ({
@@ -193,4 +193,25 @@ test('groupBy lets a trade join several groups (tags) or none', () => {
   close(g.a.net, 30);
   assert.equal(g.b.count, 1);
   assert.equal(Object.keys(g).length, 2); // the untagged trade is in no group
+});
+
+// ---- open trades are not counted (Task 14) ----
+const OPEN = T({ exit_price: null, close_time_utc: null, profit: null, commission: 0, swap: 0 });
+
+test('open trades have no result values', () => {
+  assert.ok(isOpen(OPEN));
+  assert.ok(!isOpen(SET[0]));
+  assert.equal(pips(OPEN), null);
+  assert.equal(realizedR(OPEN), null);
+  assert.equal(netPnl(OPEN), null);
+  close(plannedRR(OPEN), 2); // the plan is known before the trade closes
+});
+
+test('statistics, equity, calendar and groups skip open trades', () => {
+  const withOpen = [...SET, OPEN];
+  assert.deepEqual(stats(withOpen, 1000), stats(SET, 1000));
+  assert.deepEqual(equitySeries(withOpen, 1000), equitySeries(SET, 1000));
+  assert.deepEqual(dailyPnl(withOpen, 'UTC'), dailyPnl(SET, 'UTC'));
+  assert.deepEqual(groupBy(withOpen, (t) => t.symbol), groupBy(SET, (t) => t.symbol));
+  assert.ok(!inRange(OPEN, { from: '2024-01-01', to: null }, 'UTC'));
 });

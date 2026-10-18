@@ -97,3 +97,31 @@ test('delete removes the trade', async () => {
   assert.ok(!list.json.some((t) => t.id === c.json.id));
   assert.equal((await s.call('DELETE', `/api/trades/${c.json.id}`)).status, 404);
 });
+
+// ---- open trades (Task 14) ----
+const openTrade = (over = {}) => sampleTrade({ exit_price: '', close_time_utc: '', profit: '', ...over });
+
+test('a trade can be saved while still open', async () => {
+  const r = await s.call('POST', '/api/trades', openTrade());
+  assert.equal(r.status, 200);
+  assert.equal(r.json.exit_price, null);
+  assert.equal(r.json.close_time_utc, null);
+  assert.equal(r.json.profit, null);
+});
+
+test('closing fields must be all filled or all empty', async () => {
+  for (const over of [{ exit_price: 1.1 }, { close_time_utc: '2024-03-04T12:00:00.000Z' }, { profit: 5 }, { exit_price: 1.1, profit: 5 }]) {
+    const r = await s.call('POST', '/api/trades', openTrade(over));
+    assert.equal(r.status, 400, JSON.stringify(over));
+    assert.match(r.json.error, /[฀-๿]/);
+  }
+});
+
+test('an open trade can be closed later and reopened', async () => {
+  const c = await s.call('POST', '/api/trades', openTrade());
+  const closed = await s.call('PUT', `/api/trades/${c.json.id}`, { exit_price: 1.108, close_time_utc: '2024-03-04T12:00:00.000Z', profit: 80 });
+  assert.equal(closed.status, 200);
+  assert.equal(closed.json.profit, 80);
+  const reopened = await s.call('PUT', `/api/trades/${c.json.id}`, { exit_price: '', close_time_utc: '', profit: '' });
+  assert.equal(reopened.json.exit_price, null);
+});
