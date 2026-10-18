@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { netPnl, pipSize, pips, plannedRR, realizedR, session, stats, equitySeries, rangeBounds, inRange, dailyPnl, monthGrid } from '../public/lib/calc.js';
+import { netPnl, pipSize, pips, plannedRR, realizedR, session, stats, equitySeries, rangeBounds, inRange, dailyPnl, monthGrid, groupBy } from '../public/lib/calc.js';
 
 const close = (a, b, eps = 1e-6) => assert.ok(Math.abs(a - b) < eps, `${a} !~ ${b}`);
 const T = (over = {}) => ({
@@ -166,4 +166,31 @@ test('month grid starts on Monday and pads to full weeks', () => {
   assert.equal(grid.filter(Boolean).length, 31);
   assert.equal(grid.filter(Boolean).at(-1), '2024-03-31');
   assert.equal(monthGrid(2024, 2).filter(Boolean).length, 29); // leap year
+});
+
+// ---- grouping ----
+test('groupBy counts, winrate, net and average R per group', () => {
+  const trades = [
+    N(100, 1, { symbol: 'EURUSD', exit_price: 1.105 }), // +1R
+    N(-50, 2, { symbol: 'EURUSD', exit_price: 1.095 }), // -1R
+    N(30, 3, { symbol: 'XAUUSD', sl: null }),
+  ];
+  const g = Object.fromEntries(groupBy(trades, (t) => t.symbol).map((r) => [r.key, r]));
+  assert.equal(g.EURUSD.count, 2);
+  assert.equal(g.EURUSD.wins, 1);
+  close(g.EURUSD.winrate, 50);
+  close(g.EURUSD.net, 50);
+  close(g.EURUSD.avgNet, 25);
+  close(g.EURUSD.avgR, 0);
+  assert.equal(g.XAUUSD.avgR, null);
+  assert.equal(g.XAUUSD.count, 1);
+});
+
+test('groupBy lets a trade join several groups (tags) or none', () => {
+  const trades = [N(10, 1, { tags: ['a', 'b'] }), N(20, 2, { tags: ['a'] }), N(5, 3, { tags: [] })];
+  const g = Object.fromEntries(groupBy(trades, (t) => t.tags).map((r) => [r.key, r]));
+  assert.equal(g.a.count, 2);
+  close(g.a.net, 30);
+  assert.equal(g.b.count, 1);
+  assert.equal(Object.keys(g).length, 2); // the untagged trade is in no group
 });

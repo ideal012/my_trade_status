@@ -85,7 +85,7 @@ settings    key, value   (timezone, default account)
 ### Phase 3: Dashboard & Analytics — กราฟ
 - [x] Task 7: Module สถิติ + การ์ดตัวเลขหน้าภาพรวม
 - [x] Task 8: Equity curve + Calendar กำไรรายวัน
-- [ ] Task 9: หน้าวิเคราะห์ แยกตามคู่เงิน/Session/วัน/กลยุทธ์/tag/อารมณ์
+- [x] Task 9: หน้าวิเคราะห์ แยกตามคู่เงิน/Session/วัน/กลยุทธ์/tag/อารมณ์
 
 ### Checkpoint: Dashboard
 - [ ] ตัวเลขบน dashboard ตรงกับที่คำนวณมือจากข้อมูลตัวอย่าง

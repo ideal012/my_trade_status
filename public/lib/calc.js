@@ -150,3 +150,30 @@ export function monthGrid(year, month) {
   while (cells.length % 7) cells.push(null);
   return cells;
 }
+
+// ---- grouping ----
+
+// keyFn(trade) returns one key, or an array of keys (a trade joins every group), or [] for none.
+export function groupBy(trades, keyFn) {
+  const groups = new Map();
+  for (const t of trades) {
+    for (const key of [keyFn(t)].flat()) {
+      if (!groups.has(key)) groups.set(key, []);
+      groups.get(key).push(t);
+    }
+  }
+  return [...groups].map(([key, list]) => {
+    const nets = list.map(netPnl);
+    const rs = list.map(realizedR).filter((r) => r != null);
+    const net = nets.reduce((a, b) => a + b, 0);
+    return {
+      key,
+      count: list.length,
+      wins: nets.filter((n) => n > 0).length,
+      winrate: (nets.filter((n) => n > 0).length / list.length) * 100,
+      net,
+      avgNet: net / list.length,
+      avgR: rs.length ? rs.reduce((a, b) => a + b, 0) / rs.length : null,
+    };
+  });
+}

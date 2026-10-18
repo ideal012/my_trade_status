@@ -1,7 +1,7 @@
 import { html, setHtml, state, account, loadTrades, num, signed, tone, pct, makeChart, COLORS } from '../lib/ui.js';
 import { dayKey, fmtTime } from '../lib/time.js';
 import { stats, netPnl, inRange, equitySeries, dailyPnl, monthGrid } from '../lib/calc.js';
-import { RANGES, readRange, writeRange, rangeFilter } from '../lib/range.js';
+import { readRange, rangeFilter, rangeBar, bindRangeBar } from '../lib/range.js';
 
 const MONTHS = ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'];
 const DOW = ['จ.', 'อ.', 'พ.', 'พฤ.', 'ศ.', 'ส.', 'อา.'];
@@ -32,13 +32,7 @@ export async function render(view) {
   setHtml(view, html`
     <div class="page-head">
       <div><h1>ภาพรวม</h1><p class="sub">${acc.name} · ${label} · เวลาตามโซน ${tz}</p></div>
-      <div class="row" id="range">
-        ${RANGES.map(([k, text]) => html`<button class="seg ${sel.kind === k ? 'active' : ''}" data-kind="${k}">${text}</button>`)}
-        ${sel.kind === 'custom' ? html`
-          <input type="date" id="from" value="${sel.from ?? ''}" style="width:auto">
-          <span>ถึง</span>
-          <input type="date" id="to" value="${sel.to ?? ''}" style="width:auto">` : ''}
-      </div>
+      ${rangeBar(sel)}
     </div>
 
     ${all.length ? '' : html`<div class="card empty">ยังไม่มีเทรด — ไปที่ <a href="#/trades">รายการเทรด</a> เพื่อเพิ่มไม้แรก หรือใช้ <a href="#/import">Import</a> จาก MT4/MT5</div>`}
@@ -69,16 +63,7 @@ export async function render(view) {
   if (st.count) drawEquity(view.querySelector('#equity'), equitySeries(inside, startCapital), tz);
   drawCalendar(view, all, tz, cur);
 
-  const again = () => render(view);
-  view.querySelector('#range').addEventListener('click', (e) => {
-    const b = e.target.closest('[data-kind]');
-    if (!b) return;
-    writeRange({ ...sel, kind: b.dataset.kind });
-    again();
-  });
-  for (const id of ['from', 'to']) {
-    view.querySelector(`#${id}`)?.addEventListener('change', (e) => { writeRange({ ...sel, [id]: e.target.value || null }); again(); });
-  }
+  bindRangeBar(view, sel, () => render(view));
 }
 
 function drawEquity(canvas, series, tz) {
