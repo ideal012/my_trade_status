@@ -228,7 +228,7 @@
 
 ## Phase 4: Import & ความปลอดภัยข้อมูล
 
-### - [ ] Task 10: Import report HTML จาก MT5
+### - [x] Task 10: Import report HTML จาก MT5
 
 **Description:** หน้า "Import" เลือกบัญชี, ใส่ UTC offset ของ server โบรกเกอร์, เลือกไฟล์ report HTML ของ MT5 → browser parse ตาราง Positions ด้วย `DOMParser` (รองรับไฟล์ UTF-16) → แสดง preview พร้อมสถานะ "ใหม่ / ซ้ำ" → กดยืนยันเพื่อบันทึก (`POST /api/trades/import`)
 
@@ -249,7 +249,7 @@
 
 ---
 
-### - [ ] Task 11: Import statement HTML จาก MT4
+### - [x] Task 11: Import statement HTML จาก MT4
 
 **Description:** เพิ่ม parser สำหรับ Detailed Statement ของ MT4 (ตาราง Closed Transactions) ใน module เดียวกัน ตรวจจับอัตโนมัติว่าไฟล์เป็น MT4 หรือ MT5 ข้ามแถวที่ไม่ใช่เทรด (balance/deposit, ออเดอร์ที่ยกเลิก)
 

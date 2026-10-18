@@ -117,10 +117,46 @@ export function updateTrade(db, id, body) {
   return getTrade(db, id);
 }
 
+// Bulk import (MT4/MT5 reports). Everything is validated first, then inserted in one transaction;
+// tickets that already exist in the account are skipped so the same file can be imported twice.
+export function importTrades(db, body) {
+  const list = body?.trades;
+  if (!Array.isArray(list) || !list.length) throw new HttpError(400, 'ไม่มีเทรดให้นำเข้า');
+  if (list.length > 5000) throw new HttpError(400, 'นำเข้าได้ครั้งละไม่เกิน 5,000 ไม้');
+  if (!db.prepare('SELECT 1 FROM accounts WHERE id = ?').get(Number(body.account_id))) throw new HttpError(400, 'ไม่พบบัญชีนี้');
+
+  const rows = list.map((t, i) => {
+    if (!String(t?.ticket ?? '').trim()) throw new HttpError(400, `แถวที่ ${i + 1} ไม่มี ticket`);
+    try {
+      return cleanTrade(db, { ...t, account_id: body.account_id });
+    } catch (err) {
+      throw err instanceof HttpError ? new HttpError(400, `Ticket ${t.ticket}: ${err.message}`) : err;
+    }
+  });
+
+  const seen = new Set(db.prepare('SELECT ticket FROM trades WHERE account_id = ? AND ticket IS NOT NULL').all(Number(body.account_id)).map((r) => r.ticket));
+  let inserted = 0;
+  db.exec('BEGIN');
+  try {
+    for (const row of rows) {
+      if (seen.has(row.ticket)) continue;
+      seen.add(row.ticket);
+      insertTrade(db, row);
+      inserted++;
+    }
+    db.exec('COMMIT');
+  } catch (err) {
+    db.exec('ROLLBACK');
+    throw err;
+  }
+  return { inserted, skipped: rows.length - inserted };
+}
+
 export function tradeRoutes(db, dataDir) {
   return [
     ['GET', '/api/trades', ({ query }) => listTrades(db, Number(query.get('account_id')) || null)],
     ['POST', '/api/trades', ({ body }) => getTrade(db, insertTrade(db, cleanTrade(db, body)))],
+    ['POST', '/api/trades/import', ({ body }) => importTrades(db, body)],
     ['PUT', '/api/trades/:id', ({ params, body }) => updateTrade(db, Number(params.id), body ?? {})],
     ['DELETE', '/api/trades/:id', ({ params }) => {
       const trade = getTrade(db, Number(params.id)); // 404 if missing

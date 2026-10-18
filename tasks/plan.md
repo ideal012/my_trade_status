@@ -91,8 +91,8 @@ settings    key, value   (timezone, default account)
 - [ ] ตัวเลขบน dashboard ตรงกับที่คำนวณมือจากข้อมูลตัวอย่าง
 
 ### Phase 4: Import & ความปลอดภัยข้อมูล
-- [ ] Task 10: Import report HTML จาก MT5
-- [ ] Task 11: Import statement HTML จาก MT4
+- [x] Task 10: Import report HTML จาก MT5
+- [x] Task 11: Import statement HTML จาก MT4
 - [ ] Task 12: Export CSV + Backup DB + README วิธีใช้ + start.bat
 
 ### Checkpoint: Complete
