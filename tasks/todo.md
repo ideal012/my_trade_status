@@ -295,3 +295,75 @@
 - [ ] `npm test` ผ่านทั้งหมด
 - [ ] Acceptance criteria ทุก task ผ่าน
 - [ ] ผู้ใช้ใช้งานจริงด้วยข้อมูลตัวเองได้ 1 สัปดาห์โดยไม่มีปัญหาข้อมูลหาย
+
+---
+
+## Phase 5: ใช้จริงให้ลื่นขึ้น
+
+### - [ ] Task 13: Import อ่าน report ที่หัวตารางไม่ใช่ภาษาอังกฤษได้
+
+**Description:** MT4/MT5 เขียนหัวตารางตามภาษาของโปรแกรม (เช่นภาษาไทย) ทำให้หาคอลัมน์จากชื่อไม่เจอ เพิ่มวิธีสำรอง: ถ้าไม่พบหัวตารางภาษาอังกฤษ ให้หาแถวเทรดจากโครงสร้าง (มีวันที่ 2 ช่อง, ticket, คู่เงิน, buy/sell, ตัวเลขท้ายแถว) แล้วบอกในหน้า preview ว่าอ่านด้วยวิธีสำรอง ให้ตรวจละเอียด
+
+**Acceptance criteria:**
+- [ ] Report MT5 และ MT4 ที่หัวตารางเป็นภาษาไทยอ่านได้ค่าเท่ากับฉบับภาษาอังกฤษ
+- [ ] ตาราง Orders/Deals และแถว balance/ออเดอร์ยกเลิก ไม่ถูกนำเข้า
+- [ ] Report ภาษาอังกฤษยังใช้วิธีอ่านจากหัวตารางเหมือนเดิม
+
+**Verification:**
+- [ ] `npm test` ผ่าน (fixture ที่เปลี่ยนหัวตารางเป็นภาษาไทย)
+- [ ] Manual: preview แสดงคำเตือนวิธีสำรอง
+
+**Dependencies:** Task 11
+
+**Files likely touched:** `public/lib/import-mt.js`, `public/pages/import.js`, `test/import.test.js`
+
+**Estimated scope:** S
+
+---
+
+### - [ ] Task 14: บันทึกไม้ที่ยังเปิดอยู่
+
+**Description:** ให้เว้นราคาออก/เวลาปิด/กำไรได้ (= ไม้เปิดอยู่) แล้วกลับมาแก้เพื่อปิดไม้ทีหลัง ต้องแก้ schema (คอลัมน์ NOT NULL) ด้วย migration แบบสร้างตารางใหม่ใน transaction และ backup ฐานข้อมูลเดิมอัตโนมัติก่อน migrate สถิติ/กราฟ/ปฏิทินนับเฉพาะไม้ที่ปิดแล้ว
+
+**Acceptance criteria:**
+- [ ] ฐานข้อมูลเดิมถูก migrate โดยเทรดและรูปเดิมอยู่ครบ และมีไฟล์ backup ก่อน migrate
+- [ ] บันทึกไม้เปิดได้ (ไม่มี exit/เวลาปิด/กำไร); กรอกผลไม่ครบ (มีบางช่อง) ได้ 400 พร้อมข้อความ
+- [ ] รายการเทรดแสดงป้าย "เปิดอยู่"; ภาพรวม/วิเคราะห์/ปฏิทินไม่นับไม้เปิด
+
+**Verification:**
+- [ ] `npm test` ผ่าน (migration จาก schema เก่า, validation, สถิติข้ามไม้เปิด)
+- [ ] Manual: เพิ่มไม้เปิด แล้วแก้ให้ปิด
+
+**Dependencies:** Task 3
+
+**Files likely touched:** `server/db.js`, `server/trades.js`, `public/lib/calc.js`, `public/lib/trade-form.js`, `public/pages/*.js`, `test/*.test.js`
+
+**Estimated scope:** M
+
+---
+
+### - [ ] Task 15: ความเสี่ยงต่อไม้เป็นเงินและ % ของทุน
+
+**Description:** คำนวณเงินที่เสี่ยงต่อไม้จากผลของไม้นั้นเอง (กำไร ÷ ระยะราคาที่วิ่ง × ระยะ SL — ได้ค่าที่รวมขนาด lot และอัตราแลกเปลี่ยนแล้ว) หรือจากช่อง "ความเสี่ยง ($)" ที่กรอกเอง (จำเป็นสำหรับไม้เปิด) แล้วคิดเป็น % ของทุนก่อนเข้าไม้ ตั้งกฎ % สูงสุดในหน้าตั้งค่า (ค่าเริ่มต้น 2%) ไม้ที่เกินกฎถูกเน้นสีแดง แสดงบนภาพรวม และมีแท็บวิเคราะห์ "ตามกฎความเสี่ยง"
+
+**Acceptance criteria:**
+- [ ] ความเสี่ยงที่คำนวณได้ตรงกับมือ (buy/sell, คู่ JPY); ไม่มี SL หรือคำนวณไม่ได้ แสดง "—"
+- [ ] % คิดจากทุนก่อนเปิดไม้ (ทุนเริ่มต้น + กำไรสุทธิของไม้ที่ปิดก่อนหน้า)
+- [ ] ไม้ที่เกินกฎมีป้าย "เกินกฎ"; ภาพรวมแสดงความเสี่ยงเฉลี่ยและจำนวนไม้เกินกฎ
+
+**Verification:**
+- [ ] `npm test` ผ่าน (riskMoney, riskPct, กฎ, migration เพิ่มคอลัมน์)
+- [ ] Manual: ดูตารางและภาพรวม
+
+**Dependencies:** Task 14
+
+**Files likely touched:** `server/db.js`, `server/trades.js`, `server/accounts.js`, `public/lib/calc.js`, `public/lib/trade-form.js`, `public/pages/trades.js`, `public/pages/dashboard.js`, `public/pages/analytics.js`, `public/pages/settings.js`
+
+**Estimated scope:** M
+
+---
+
+### Checkpoint: Phase 5
+- [ ] `npm test` ผ่านทั้งหมด
+- [ ] ฐานข้อมูลเดิม migrate ได้ ข้อมูลไม่หาย
+- [ ] ผู้ใช้ทดสอบ import ด้วยไฟล์จริง
