@@ -63,6 +63,7 @@ export async function render(view) {
         <p>พบ <b>${parsed.trades.length}</b> ไม้ — ใหม่ <b>${fresh.length}</b> · ซ้ำ ${parsed.trades.length - fresh.length}
           ${parsed.errors.length ? html` · <span class="neg">อ่านไม่ได้ ${parsed.errors.length} แถว</span>` : ''}</p>
         <p class="sub">ตรวจดูว่าราคา เวลา และกำไรของไม้แรก ๆ ตรงกับในโปรแกรมเทรด ถ้าเวลาเลื่อนผิด ให้เปลี่ยนตัวเลือกเวลาเซิร์ฟเวอร์ด้านบน (แสดงเวลาตามโซน ${tz})</p>
+        ${parsed.layout === 'pattern' ? html`<div class="form-error">หัวตารางในไฟล์ไม่ใช่ภาษาอังกฤษ จึงอ่านจากลำดับคอลัมน์แทน — ตรวจราคา SL/TP และกำไรกับในโปรแกรมเทรดให้ละเอียดก่อนนำเข้า (หรือเปลี่ยนภาษาโปรแกรมเทรดเป็น English แล้ว export ใหม่)</div>` : ''}
         ${parsed.errors.length ? html`<div class="form-error">${parsed.errors.map((e) => html`<div>${e}</div>`)}</div>` : ''}
         <div class="table-wrap">${parsed.trades.length ? html`<table>
           <thead><tr><th>Ticket</th><th>คู่เงิน</th><th>ทิศทาง</th><th class="num">Lot</th><th class="num">Entry</th><th class="num">Exit</th><th>เวลาเปิด</th><th class="num">สุทธิ</th><th></th></tr></thead>

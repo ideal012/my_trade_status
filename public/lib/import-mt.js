@@ -128,12 +128,47 @@ function readTrade(cells, h, source, utcOffset) {
   return bad.length ? { error: `Ticket ${ticket}: ${bad.join(', ')}` } : { trade };
 }
 
+// ---- fallback: reports whose headers are not in English ----
+// MetaTrader writes headers in the terminal's language. Without readable headers, trade rows are
+// recognised by their shape: exactly two date cells, a ticket next to the first date, and only
+// numbers after the second date.
+//   MT5 Positions:          time, position, symbol, type, volume, [blank], price, S/L, T/P, time, price, commission, [fee], swap, profit
+//   MT4 Closed Transactions: ticket, open time, type, size, item, price, S/L, T/P, close time, price, commission, taxes, swap, profit
+const LAYOUT = { time: [0, 1], ticket: 2, symbol: 3, type: 4, lot: 5, price: [6, 9], sl: 7, tp: 8, commission: 10, fee: -1, swap: 11, profit: 12 };
+const DIRECTION = { buy: 'buy', sell: 'sell', 'ซื้อ': 'buy', 'ขาย': 'sell' };
+const isNum = (s) => Number.isFinite(toNumber(s));
+
+function readByLayout(cells, utcOffset) {
+  const dates = cells.flatMap((c, i) => (DATE.test(c) ? [i] : []));
+  if (dates.length !== 2) return null;
+  const [d1, d2] = dates;
+  let kind, ticket, symbol, type, lot, between;
+  if (/^\d+$/.test(cells[d1 + 1] ?? '')) {
+    kind = 'mt5';
+    [ticket, symbol, type] = cells.slice(d1 + 1, d1 + 4);
+    between = cells.slice(d1 + 4, d2);
+    lot = between[0];
+  } else if (/^\d+$/.test(cells[d1 - 1] ?? '')) {
+    kind = 'mt4';
+    ticket = cells[d1 - 1];
+    [type, lot, symbol] = cells.slice(d1 + 1, d1 + 4);
+    between = cells.slice(d1 + 4, d2);
+  } else return null;
+  const direction = DIRECTION[(type ?? '').toLowerCase()];
+  const after = cells.slice(d2 + 1).filter((c) => c !== '');
+  if (!direction || between.length < 3 || after.length < 4 || !after.every(isNum)) return null; // orders, balance, open trades...
+  const fees = after.slice(1, -2).reduce((s, c) => s + toNumber(c), 0);
+  const row = [cells[d1], cells[d2], ticket, symbol, direction, lot, ...between.slice(-3), after[0], String(fees), after.at(-2), after.at(-1)];
+  return { kind, ...readTrade(row, LAYOUT, kind, utcOffset) };
+}
+
 export function parseReport(text, utcOffset) {
+  const rows = readRows(String(text));
   const trades = [];
   const errors = [];
   let kind = null;
   let header = null;
-  for (const cells of readRows(String(text))) {
+  for (const cells of rows) {
     const names = cells.map(norm);
     const found = detectHeader(names);
     if (found) {
@@ -147,6 +182,15 @@ export function parseReport(text, utcOffset) {
       if (row?.error) errors.push(row.error);
     }
   }
+  if (kind) return { kind, layout: 'header', trades, errors };
+
+  for (const cells of rows) {
+    const row = readByLayout(cells, utcOffset);
+    if (!row) continue;
+    kind ??= row.kind;
+    if (row.trade) trades.push({ ...row.trade, source: kind });
+    if (row.error) errors.push(row.error);
+  }
   if (!kind) throw new Error('ไม่พบตารางเทรดของ MT4/MT5 ในไฟล์นี้ — ใช้ไฟล์ HTML ที่ได้จาก History → คลิกขวา → Report (MT5) หรือ Save as Detailed Report (MT4)');
-  return { kind, trades, errors };
+  return { kind, layout: 'pattern', trades, errors };
 }

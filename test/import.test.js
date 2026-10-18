@@ -133,3 +133,35 @@ test('import requires a ticket on every row and a sane payload', async () => {
   assert.equal((await s.call('POST', '/api/trades/import', importBody([]))).status, 400);
   assert.equal((await s.call('POST', '/api/trades/import', importBody([mtTrade(30)], { account_id: 999 }))).status, 400);
 });
+
+// ---- reports from a terminal running in another language (Task 13) ----
+const THAI = {
+  Positions: 'สถานะการซื้อขาย', Orders: 'คำสั่ง', Deals: 'ดีล', Time: 'เวลา', Position: 'โพซิชัน', Symbol: 'สัญลักษณ์', Type: 'ประเภท',
+  Volume: 'ปริมาณ', Price: 'ราคา', 'S / L': 'ตัดขาดทุน', 'T / P': 'ทำกำไร', Commission: 'ค่าคอมมิชชั่น', Swap: 'สว็อป', Profit: 'กำไร',
+  'Open Time': 'เวลาเปิด', Order: 'คำสั่งซื้อขาย', State: 'สถานะ', Comment: 'หมายเหตุ', Deal: 'ดีล', Direction: 'ทิศทาง', Balance: 'ยอดเงิน',
+  Ticket: 'ตั๋ว', Size: 'ขนาด', Item: 'สินค้า', 'Close Time': 'เวลาปิด', Taxes: 'ภาษี', 'Closed Transactions:': 'รายการที่ปิดแล้ว:', 'Open Trades:': 'รายการที่เปิดอยู่:',
+};
+const toThai = (html, types = false) => {
+  let out = html.replace(/>([^<>]+)</g, (m, text) => (THAI[text] ? `>${THAI[text]}<` : m));
+  if (types) out = out.replace(/<td>buy<\/td>/g, '<td>ซื้อ</td>').replace(/<td>sell<\/td>/g, '<td>ขาย</td>');
+  return out;
+};
+
+test('MT5 report with Thai headers is read by row layout and matches the English result', () => {
+  const english = parseReport(fixture('mt5-report.html'), 3);
+  const thai = parseReport(toThai(fixture('mt5-report.html')), 3);
+  assert.equal(english.layout, 'header');
+  assert.equal(thai.layout, 'pattern');
+  assert.equal(thai.kind, 'mt5');
+  assert.deepEqual(thai.errors, []);
+  assert.deepEqual(thai.trades, english.trades);
+});
+
+test('MT4 statement with Thai headers and Thai buy/sell words matches the English result', () => {
+  const english = parseReport(fixture('mt4-statement.html'), 'ny');
+  const thai = parseReport(toThai(fixture('mt4-statement.html'), true), 'ny');
+  assert.equal(thai.layout, 'pattern');
+  assert.equal(thai.kind, 'mt4');
+  assert.deepEqual(thai.errors, []);
+  assert.deepEqual(thai.trades, english.trades);
+});
