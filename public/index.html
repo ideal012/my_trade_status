@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>สมุดเทรด Forex</title>
+  <link rel="stylesheet" href="/app.css">
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="#/dashboard">สมุดเทรด</a>
+    <nav id="nav">
+      <a href="#/dashboard" data-page="dashboard">ภาพรวม</a>
+      <a href="#/trades" data-page="trades">รายการเทรด</a>
+      <a href="#/analytics" data-page="analytics">วิเคราะห์</a>
+      <a href="#/strategies" data-page="strategies">กลยุทธ์</a>
+      <a href="#/import" data-page="import">Import</a>
+      <a href="#/settings" data-page="settings">ตั้งค่า</a>
+    </nav>
+    <label class="account-picker">บัญชี <select id="account-select"></select></label>
+  </header>
+  <main id="view"></main>
+  <div id="toast" role="status" aria-live="polite"></div>
+  <script src="/vendor/chart.js"></script>
+  <script type="module" src="/app.js"></script>
+</body>
+</html>

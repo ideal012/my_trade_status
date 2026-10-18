@@ -11,7 +11,7 @@
 
 ## Phase 1: Foundation — บันทึกเทรดได้
 
-### - [ ] Task 1: Server + DB + หน้าเว็บโครงหลัก
+### - [x] Task 1: Server + DB + หน้าเว็บโครงหลัก
 
 **Description:** สร้างโปรเจกต์ Node, server `node:http` ที่ serve ไฟล์ static และ JSON API, สร้าง schema SQLite ทุกตาราง (ตาม Data Model ใน plan.md) พร้อมบัญชี default 1 บัญชี, หน้าเว็บ shell ธีมขาว มีเมนูและ hash router ที่สลับหน้าได้ (แต่ละหน้ายังว่าง)
 

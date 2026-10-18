@@ -67,7 +67,7 @@ settings    key, value   (timezone, default account)
 รายละเอียดแต่ละ task (acceptance criteria, verification, ไฟล์) อยู่ใน `tasks/todo.md`
 
 ### Phase 1: Foundation — บันทึกเทรดได้
-- [ ] Task 1: Server + DB + หน้าเว็บโครงหลัก (ธีมขาว, เมนู)
+- [x] Task 1: Server + DB + หน้าเว็บโครงหลัก (ธีมขาว, เมนู)
 - [ ] Task 2: เพิ่มเทรดและดูรายการเทรด
 - [ ] Task 3: แก้ไข/ลบเทรด + ค่าคำนวณ (net, pips, RR, R, session)
 

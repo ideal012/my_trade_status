@@ -1,0 +1,17 @@
+{
+  "name": "my-trade-status",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Forex trading journal that runs locally",
+  "scripts": {
+    "start": "node server/index.js",
+    "test": "node --test"
+  },
+  "engines": {
+    "node": ">=22.13"
+  },
+  "dependencies": {
+    "chart.js": "^4.5.1"
+  }
+}
