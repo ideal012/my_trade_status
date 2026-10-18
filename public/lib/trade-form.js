@@ -1,5 +1,6 @@
-import { html, raw, state, api, toast } from './ui.js';
+import { html, raw, state, api, toast, armDelete, num, signed } from './ui.js';
 import { localToUtc, toLocal } from './time.js';
+import { pips, plannedRR, realizedR, netPnl } from './calc.js';
 
 const SYMBOLS = ['EURUSD', 'GBPUSD', 'USDJPY', 'XAUUSD', 'AUDUSD', 'USDCAD', 'USDCHF', 'NZDUSD', 'EURJPY', 'GBPJPY'];
 
@@ -50,8 +51,10 @@ export function openTradeForm(trade, onSaved) {
         </div>
       </fieldset>
 
+      <div class="preview" id="preview">กรอก Entry / SL / TP เพื่อดูค่า RR</div>
+
       <div class="dialog-actions">
-        <span></span>
+        ${trade ? html`<button type="button" class="danger" data-act="delete">ลบเทรดนี้</button>` : html`<span></span>`}
         <span class="row">
           <button type="button" data-act="cancel">ยกเลิก</button>
           <button type="submit" class="primary">บันทึก</button>
@@ -64,6 +67,40 @@ export function openTradeForm(trade, onSaved) {
   const close = () => { dlg.close(); dlg.remove(); };
   dlg.querySelector('[data-act=cancel]').addEventListener('click', close);
   dlg.addEventListener('cancel', () => dlg.remove());
+
+  const del = dlg.querySelector('[data-act=delete]');
+  if (del) {
+    armDelete(del, async () => {
+      await api(`/api/trades/${trade.id}`, { method: 'DELETE' });
+      close();
+      toast('ลบแล้ว');
+      onSaved();
+    });
+  }
+
+  const preview = dlg.querySelector('#preview');
+  const updatePreview = () => {
+    const f = Object.fromEntries(new FormData(form));
+    const n = (v) => (v === '' || v == null ? null : Number(v));
+    const t = {
+      symbol: f.symbol || 'EURUSD', direction: f.direction, entry_price: n(f.entry_price),
+      sl: n(f.sl), tp: n(f.tp), exit_price: n(f.exit_price),
+      profit: n(f.profit) ?? 0, commission: n(f.commission) ?? 0, swap: n(f.swap) ?? 0,
+    };
+    if (t.entry_price == null) return;
+    const bits = [];
+    const rr = plannedRR(t);
+    bits.push(`RR ตามแผน ${rr == null ? '—' : '1 : ' + num(rr)}`);
+    if (t.exit_price != null) {
+      bits.push(`ผลจริง ${signed(pips(t), 1)} pips`);
+      const r = realizedR(t);
+      if (r != null) bits.push(`${signed(r)} R`);
+      bits.push(`สุทธิ ${signed(netPnl(t))}`);
+    }
+    preview.textContent = bits.join(' · ');
+  };
+  form.addEventListener('input', updatePreview);
+  updatePreview();
 
   form.addEventListener('submit', async (e) => {
     e.preventDefault();

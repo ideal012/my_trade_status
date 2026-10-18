@@ -67,3 +67,33 @@ test('malformed JSON body gives 400', async () => {
   const res = await fetch(`http://127.0.0.1:${s.port}/api/trades`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: '{oops' });
   assert.equal(res.status, 400);
 });
+
+test('update changes only what is sent and keeps the rest', async () => {
+  const c = await s.call('POST', '/api/trades', sampleTrade({ tags: 'a', notes: 'keep me', ticket: '900' }));
+  const r = await s.call('PUT', `/api/trades/${c.json.id}`, { ...sampleTrade({ profit: -50, exit_price: 1.095 }) });
+  assert.equal(r.status, 200);
+  assert.equal(r.json.profit, -50);
+  assert.equal(r.json.notes, 'keep me');
+  assert.deepEqual(r.json.tags, ['a']);
+  assert.equal(r.json.ticket, '900');
+});
+
+test('update validates and 404s on unknown id', async () => {
+  const c = await s.call('POST', '/api/trades', sampleTrade());
+  assert.equal((await s.call('PUT', `/api/trades/${c.json.id}`, { lot: -1 })).status, 400);
+  assert.equal((await s.call('PUT', '/api/trades/99999', sampleTrade())).status, 404);
+});
+
+test('update cannot steal another trade ticket', async () => {
+  await s.call('POST', '/api/trades', sampleTrade({ ticket: 'T1' }));
+  const b = await s.call('POST', '/api/trades', sampleTrade({ ticket: 'T2' }));
+  assert.equal((await s.call('PUT', `/api/trades/${b.json.id}`, { ticket: 'T1' })).status, 400);
+});
+
+test('delete removes the trade', async () => {
+  const c = await s.call('POST', '/api/trades', sampleTrade());
+  assert.equal((await s.call('DELETE', `/api/trades/${c.json.id}`)).status, 200);
+  const list = await s.call('GET', '/api/trades?account_id=1');
+  assert.ok(!list.json.some((t) => t.id === c.json.id));
+  assert.equal((await s.call('DELETE', `/api/trades/${c.json.id}`)).status, 404);
+});

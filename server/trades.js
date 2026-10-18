@@ -94,19 +94,37 @@ export function listTrades(db, accountId) {
   return rows.map((r) => present(r, byTrade.get(r.id)));
 }
 
-export function insertTrade(db, row) {
+function writeTrade(row, run) {
   try {
-    const sql = `INSERT INTO trades (${COLS.join(',')}) VALUES (${COLS.map((c) => ':' + c).join(',')})`;
-    return Number(db.prepare(sql).run(row).lastInsertRowid);
+    return run();
   } catch (err) {
     if (/UNIQUE/.test(err.message)) throw new HttpError(400, `Ticket ${row.ticket} มีอยู่แล้วในบัญชีนี้`);
     throw err;
   }
 }
 
+export function insertTrade(db, row) {
+  const sql = `INSERT INTO trades (${COLS.join(',')}) VALUES (${COLS.map((c) => ':' + c).join(',')})`;
+  return writeTrade(row, () => Number(db.prepare(sql).run(row).lastInsertRowid));
+}
+
+// Partial update: fields missing from the body keep their stored value.
+export function updateTrade(db, id, body) {
+  const row = cleanTrade(db, { ...getTrade(db, id), ...body });
+  const sql = `UPDATE trades SET ${COLS.map((c) => `${c} = :${c}`).join(',')} WHERE id = :id`;
+  writeTrade(row, () => db.prepare(sql).run({ ...row, id }));
+  return getTrade(db, id);
+}
+
 export function tradeRoutes(db) {
   return [
     ['GET', '/api/trades', ({ query }) => listTrades(db, Number(query.get('account_id')) || null)],
     ['POST', '/api/trades', ({ body }) => getTrade(db, insertTrade(db, cleanTrade(db, body)))],
+    ['PUT', '/api/trades/:id', ({ params, body }) => updateTrade(db, Number(params.id), body ?? {})],
+    ['DELETE', '/api/trades/:id', ({ params }) => {
+      getTrade(db, Number(params.id)); // 404 if missing
+      db.prepare('DELETE FROM trades WHERE id = ?').run(Number(params.id));
+      return {};
+    }],
   ];
 }

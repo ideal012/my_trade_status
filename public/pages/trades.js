@@ -1,8 +1,7 @@
 import { html, raw, setHtml, state, loadTrades, num, signed, tone, price } from '../lib/ui.js';
 import { fmtTime, dayKey } from '../lib/time.js';
+import { netPnl, pips, plannedRR, realizedR, session } from '../lib/calc.js';
 import { openTradeForm } from '../lib/trade-form.js';
-
-const net = (t) => t.profit + t.commission + t.swap;
 
 export async function render(view, { query }) {
   const tz = state.settings.timezone;
@@ -22,7 +21,11 @@ export async function render(view, { query }) {
       <td class="num">${price(t.sl)}</td>
       <td class="num">${price(t.tp)}</td>
       <td class="num">${price(t.exit_price)}</td>
-      <td class="num ${tone(net(t))}"><b>${signed(net(t))}</b></td>
+      <td class="num ${tone(pips(t))}">${signed(pips(t), 1)}</td>
+      <td class="num">${plannedRR(t) == null ? '—' : num(plannedRR(t))}</td>
+      <td class="num ${tone(realizedR(t))}">${realizedR(t) == null ? '—' : signed(realizedR(t))}</td>
+      <td>${session(t.open_time_utc)}</td>
+      <td class="num ${tone(netPnl(t))}"><b>${signed(netPnl(t))}</b></td>
     </tr>`;
 
   setHtml(view, html`
@@ -43,6 +46,7 @@ export async function render(view, { query }) {
           <thead><tr>
             <th>เวลาเปิด</th><th>คู่เงิน</th><th>ทิศทาง</th><th class="num">Lot</th>
             <th class="num">Entry</th><th class="num">SL</th><th class="num">TP</th><th class="num">Exit</th>
+            <th class="num">Pips</th><th class="num">RR แผน</th><th class="num">R จริง</th><th>Session</th>
             <th class="num">สุทธิ</th>
           </tr></thead>
           <tbody>${trades.map(row)}</tbody>

@@ -69,7 +69,7 @@ settings    key, value   (timezone, default account)
 ### Phase 1: Foundation — บันทึกเทรดได้
 - [x] Task 1: Server + DB + หน้าเว็บโครงหลัก (ธีมขาว, เมนู)
 - [x] Task 2: เพิ่มเทรดและดูรายการเทรด
-- [ ] Task 3: แก้ไข/ลบเทรด + ค่าคำนวณ (net, pips, RR, R, session)
+- [x] Task 3: แก้ไข/ลบเทรด + ค่าคำนวณ (net, pips, RR, R, session)
 
 ### Checkpoint: Foundation
 - [ ] `npm test` ผ่าน, เปิดเว็บแล้วเพิ่ม/แก้/ลบเทรดได้ครบ

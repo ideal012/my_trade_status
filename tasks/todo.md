@@ -54,7 +54,7 @@
 
 ---
 
-### - [ ] Task 3: แก้ไข/ลบเทรด + ค่าคำนวณ
+### - [x] Task 3: แก้ไข/ลบเทรด + ค่าคำนวณ
 
 **Description:** `PUT/DELETE /api/trades/:id`, คลิกแถวเพื่อแก้ไข, ปุ่มลบมีการยืนยันในหน้าเว็บ สร้าง `public/lib/calc.js` คำนวณ net P/L, pips, planned RR, realized R, session (Asia/London/New York/ทับซ้อน) แสดงในตาราง และแสดง RR สดขณะกรอกฟอร์ม
 
