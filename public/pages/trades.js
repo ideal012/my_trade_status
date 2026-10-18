@@ -18,6 +18,7 @@ export async function render(view, { query }) {
     && (!symbolFilter || t.symbol.includes(symbolFilter)));
 
   const openCount = trades.filter(isOpen).length;
+  const sum = stats(trades, 0); // summary of what the table shows (closed trades only)
   const risk = riskPcts(all, account().initial_capital);
   const equity = stats(all, account().initial_capital).equity;
   const riskCell = (t) => {
@@ -54,6 +55,12 @@ export async function render(view, { query }) {
         <p class="sub">${trades.length} ไม้${openCount ? ` · เปิดอยู่ ${openCount}` : ''}${day ? ` · ปิดวันที่ ${day}` : ''} · เวลาตามโซน ${tz}</p>
       </div>
       <button class="primary" id="add">+ เพิ่มเทรด</button>
+    </div>
+    <div class="grid mini">
+      <div class="card stat"><div class="label">ไม้ที่แสดง</div><div class="value">${trades.length - openCount}</div></div>
+      <div class="card stat"><div class="label">ชนะ / แพ้</div><div class="value"><span class="pos">${sum.wins}</span> / <span class="neg">${sum.losses}</span></div></div>
+      <div class="card stat"><div class="label">Winrate</div><div class="value">${sum.winrate == null ? '—' : `${num(sum.winrate, 1)}%`}</div></div>
+      <div class="card stat"><div class="label">กำไรสุทธิ</div><div class="value ${tone(sum.net)}">${signed(sum.net)}</div></div>
     </div>
     <div class="toolbar">
       <input id="symbol-filter" placeholder="ค้นหาคู่เงิน เช่น EURUSD" value="${symbolFilter}">
