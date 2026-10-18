@@ -127,3 +127,26 @@ export function inRange(trade, range, timeZone) {
   const day = dayKey(trade.close_time_utc, timeZone);
   return (!range.from || day >= range.from) && (!range.to || day <= range.to);
 }
+
+// ---- calendar ----
+
+// { 'YYYY-MM-DD': { net, count } } by day of close in timeZone
+export function dailyPnl(trades, timeZone) {
+  const days = {};
+  for (const t of trades) {
+    const d = (days[dayKey(t.close_time_utc, timeZone)] ??= { net: 0, count: 0 });
+    d.net += netPnl(t);
+    d.count += 1;
+  }
+  return days;
+}
+
+// Cells for a Monday-first month grid: 'YYYY-MM-DD' or null padding. month is 1-12.
+export function monthGrid(year, month) {
+  const last = new Date(Date.UTC(year, month, 0)).getUTCDate();
+  const lead = (new Date(Date.UTC(year, month - 1, 1)).getUTCDay() + 6) % 7;
+  const cells = Array(lead).fill(null);
+  for (let d = 1; d <= last; d++) cells.push(`${year}-${String(month).padStart(2, '0')}-${String(d).padStart(2, '0')}`);
+  while (cells.length % 7) cells.push(null);
+  return cells;
+}

@@ -1,7 +1,11 @@
-import { html, raw, setHtml, state, account, loadTrades, num, signed, tone, pct } from '../lib/ui.js';
-import { dayKey } from '../lib/time.js';
-import { stats, netPnl, rangeBounds, inRange } from '../lib/calc.js';
+import { html, setHtml, state, account, loadTrades, num, signed, tone, pct, makeChart, COLORS } from '../lib/ui.js';
+import { dayKey, fmtTime } from '../lib/time.js';
+import { stats, netPnl, inRange, equitySeries, dailyPnl, monthGrid } from '../lib/calc.js';
 import { RANGES, readRange, writeRange, rangeFilter } from '../lib/range.js';
+
+const MONTHS = ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'];
+const DOW = ['จ.', 'อ.', 'พ.', 'พฤ.', 'ศ.', 'ส.', 'อา.'];
+let calMonth = null; // { y, m } being shown, kept while the user flips between pages
 
 const card = (label, value, { cls = '', hint = '', big = false } = {}) => html`
   <div class="card stat ${big ? 'big' : ''}">
@@ -54,7 +58,16 @@ export async function render(view) {
       ${card('ชนะติดกันสูงสุด', st.maxWinStreak, { hint: 'ไม้' })}
       ${card('แพ้ติดกันสูงสุด', st.maxLossStreak, { hint: 'ไม้' })}
     </div>
-    <div id="charts"></div>`);
+
+    <div class="card">
+      <h2>Equity curve <small class="sub">เส้นทุนหลังปิดแต่ละไม้ · แรเงาแดง = ช่วงที่ทุนต่ำกว่าจุดสูงสุดเดิม (drawdown)</small></h2>
+      ${st.count ? html`<div class="chart-box"><canvas id="equity"></canvas></div>` : html`<div class="empty">ยังไม่มีเทรดในช่วงนี้</div>`}
+    </div>
+
+    <div class="card" id="calendar"></div>`);
+
+  if (st.count) drawEquity(view.querySelector('#equity'), equitySeries(inside, startCapital), tz);
+  drawCalendar(view, all, tz, cur);
 
   const again = () => render(view);
   view.querySelector('#range').addEventListener('click', (e) => {
@@ -66,4 +79,83 @@ export async function render(view) {
   for (const id of ['from', 'to']) {
     view.querySelector(`#${id}`)?.addEventListener('change', (e) => { writeRange({ ...sel, [id]: e.target.value || null }); again(); });
   }
+}
+
+function drawEquity(canvas, series, tz) {
+  let peak = -Infinity;
+  const peaks = series.map((p) => (peak = Math.max(peak, p.equity)));
+  makeChart(canvas, {
+    type: 'line',
+    data: {
+      labels: series.map((p) => (p.n === 0 ? 'เริ่มต้น' : `ไม้ที่ ${p.n}`)),
+      datasets: [
+        { label: 'จุดสูงสุดเดิม', data: peaks, borderColor: COLORS.muted, borderDash: [4, 4], borderWidth: 1, pointRadius: 0, fill: false },
+        {
+          label: 'Equity', data: series.map((p) => p.equity), borderColor: COLORS.accent, borderWidth: 2,
+          pointRadius: series.length < 40 ? 3 : 0, tension: 0.15, fill: '-1', backgroundColor: 'rgba(198, 40, 40, 0.14)',
+        },
+      ],
+    },
+    options: {
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { position: 'bottom' },
+        tooltip: {
+          callbacks: {
+            title: (items) => { const p = series[items[0].dataIndex]; return p.t ? `${items[0].label} · ${fmtTime(p.t, tz)}` : 'ทุนเริ่มต้นของช่วงนี้'; },
+            label: (item) => `${item.dataset.label}: ${num(item.parsed.y)}`,
+          },
+        },
+      },
+      scales: { x: { ticks: { maxTicksLimit: 10 } }, y: { ticks: { callback: (v) => num(v, 0) } } },
+    },
+  });
+}
+
+function drawCalendar(view, all, tz, cur) {
+  const box = view.querySelector('#calendar');
+  if (!calMonth) {
+    const [y, m] = dayKey(new Date().toISOString(), tz).split('-').map(Number);
+    calMonth = { y, m };
+  }
+  const { y, m } = calMonth;
+  const days = dailyPnl(all, tz);
+  const cells = monthGrid(y, m);
+  const monthDays = cells.filter(Boolean).map((d) => days[d]).filter(Boolean);
+  const monthNet = monthDays.reduce((s, d) => s + d.net, 0);
+
+  setHtml(box, html`
+    <div class="page-head">
+      <h2>ปฏิทินกำไรรายวัน · ${MONTHS[m - 1]} ${y}</h2>
+      <div class="row">
+        <span class="${tone(monthNet)}"><b>${signed(monthNet)} ${cur}</b> <small class="sub">(${monthDays.length} วันที่เทรด)</small></span>
+        <button data-step="-1" aria-label="เดือนก่อน">‹</button>
+        <button data-step="0">เดือนนี้</button>
+        <button data-step="1" aria-label="เดือนถัดไป">›</button>
+      </div>
+    </div>
+    <div class="cal">
+      ${DOW.map((d) => html`<div class="dow">${d}</div>`)}
+      ${cells.map((d) => {
+        if (!d) return html`<div class="day out"></div>`;
+        const x = days[d];
+        return html`<div class="day ${x ? (x.net >= 0 ? 'win' : 'loss') : ''}" ${x ? html`data-day="${d}" role="link" tabindex="0" title="ดูเทรดวันนี้"` : ''}>
+          ${Number(d.slice(8))}${x ? html`<b>${signed(x.net, 0)}</b>${x.count} ไม้` : ''}</div>`;
+      })}
+    </div>`);
+
+  box.querySelectorAll('[data-step]').forEach((b) => b.addEventListener('click', () => {
+    const step = Number(b.dataset.step);
+    if (step === 0) calMonth = null;
+    else {
+      const d = new Date(Date.UTC(y, m - 1 + step, 1));
+      calMonth = { y: d.getUTCFullYear(), m: d.getUTCMonth() + 1 };
+    }
+    drawCalendar(view, all, tz, cur);
+  }));
+  box.querySelectorAll('[data-day]').forEach((el) => {
+    const go = () => { location.hash = `#/trades?day=${el.dataset.day}`; };
+    el.addEventListener('click', go);
+    el.addEventListener('keydown', (e) => { if (e.key === 'Enter') go(); });
+  });
 }

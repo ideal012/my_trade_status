@@ -14,7 +14,7 @@ export async function render(view, { query }) {
   const day = query.get('day');
   const all = await loadTrades();
   const symbolFilter = (query.get('symbol') ?? '').toUpperCase();
-  const trades = all.filter((t) => (!day || dayKey(t.open_time_utc, tz) === day)
+  const trades = all.filter((t) => (!day || dayKey(t.close_time_utc, tz) === day)
     && (!symbolFilter || t.symbol.includes(symbolFilter)));
 
   const row = (t) => html`
@@ -41,7 +41,7 @@ export async function render(view, { query }) {
     <div class="page-head">
       <div>
         <h1>รายการเทรด</h1>
-        <p class="sub">${trades.length} ไม้${day ? ` · วันที่ ${day}` : ''} · เวลาตามโซน ${tz}</p>
+        <p class="sub">${trades.length} ไม้${day ? ` · ปิดวันที่ ${day}` : ''} · เวลาตามโซน ${tz}</p>
       </div>
       <button class="primary" id="add">+ เพิ่มเทรด</button>
     </div>

@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { netPnl, pipSize, pips, plannedRR, realizedR, session, stats, equitySeries, rangeBounds, inRange } from '../public/lib/calc.js';
+import { netPnl, pipSize, pips, plannedRR, realizedR, session, stats, equitySeries, rangeBounds, inRange, dailyPnl, monthGrid } from '../public/lib/calc.js';
 
 const close = (a, b, eps = 1e-6) => assert.ok(Math.abs(a - b) < eps, `${a} !~ ${b}`);
 const T = (over = {}) => ({
@@ -138,4 +138,32 @@ test('inRange compares close day in timezone', () => {
   assert.ok(inRange(t, { from: '2024-03-05', to: '2024-03-05' }, 'UTC'));
   assert.ok(!inRange(t, { from: '2024-03-06', to: null }, 'UTC'));
   assert.ok(inRange(t, null, 'UTC'));
+});
+
+// ---- calendar ----
+test('daily P/L groups by close day in the chosen timezone', () => {
+  const late = N(40, 4, { close_time_utc: '2024-03-04T18:00:00.000Z' }); // 01:00 on the 5th in Bangkok
+  const same = N(10, 5, { close_time_utc: '2024-03-05T02:00:00.000Z' });
+  const utc = dailyPnl([late, same], 'UTC');
+  assert.deepEqual(utc['2024-03-04'], { net: 40, count: 1 });
+  assert.deepEqual(utc['2024-03-05'], { net: 10, count: 1 });
+  const bkk = dailyPnl([late, same], 'Asia/Bangkok');
+  assert.deepEqual(bkk['2024-03-05'], { net: 50, count: 2 });
+  assert.equal(bkk['2024-03-04'], undefined);
+});
+
+test('daily totals add up to the overall net', () => {
+  const d = dailyPnl(SET, 'UTC');
+  const total = Object.values(d).reduce((s, x) => s + x.net, 0);
+  close(total, stats(SET, 0).net);
+});
+
+test('month grid starts on Monday and pads to full weeks', () => {
+  const grid = monthGrid(2024, 3); // 1 March 2024 is a Friday
+  assert.equal(grid.length % 7, 0);
+  assert.deepEqual(grid.slice(0, 4), [null, null, null, null]);
+  assert.equal(grid[4], '2024-03-01');
+  assert.equal(grid.filter(Boolean).length, 31);
+  assert.equal(grid.filter(Boolean).at(-1), '2024-03-31');
+  assert.equal(monthGrid(2024, 2).filter(Boolean).length, 29); // leap year
 });
