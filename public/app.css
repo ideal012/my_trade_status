@@ -44,6 +44,7 @@ h2 { font-size: 16px; margin: 0 0 12px; }
 /* cards */
 .card { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px 18px; }
 .card + .card, .grid + .card, .card + .grid, .grid + .grid { margin-top: 16px; }
+.grid > .card { margin-top: 0; }
 .grid { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); }
 .stat .label { color: var(--muted); font-size: 13px; }
 .stat .value { font-size: 24px; font-weight: 700; font-variant-numeric: tabular-nums; }
@@ -100,7 +101,7 @@ dialog form { padding: 20px 24px; }
 dialog h2 { font-size: 18px; }
 fieldset { border: 1px solid var(--line); border-radius: var(--radius); margin: 0 0 14px; padding: 12px 14px 14px; }
 legend { font-weight: 600; padding: 0 6px; }
-.fields { display: grid; gap: 10px; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
+.fields { display: grid; gap: 10px; grid-template-columns: repeat(auto-fit, minmax(175px, 1fr)); }
 .fields .wide { grid-column: 1 / -1; }
 .dialog-actions { display: flex; gap: 8px; justify-content: space-between; align-items: center; margin-top: 8px; flex-wrap: wrap; }
 .form-error { background: var(--neg-soft); color: var(--neg); border-radius: 8px; padding: 8px 12px; margin-bottom: 12px; }
