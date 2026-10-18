@@ -79,6 +79,13 @@ export function openTradeForm(trade, onSaved) {
         </div>
       </fieldset>
 
+      <fieldset><legend>⑤ รูป screenshot กราฟ</legend>
+        <div class="shots" id="shots"></div>
+        <label>เพิ่มรูป (PNG / JPG / WebP ไม่เกิน 10 MB) หรือกด Ctrl+V เพื่อวางรูปจาก clipboard
+          <input type="file" id="shot-file" accept="image/png,image/jpeg,image/webp" multiple>
+        </label>
+      </fieldset>
+
       <div class="preview" id="preview">กรอก Entry / SL / TP เพื่อดูค่า RR</div>
 
       <div class="dialog-actions">
@@ -119,6 +126,41 @@ export function openTradeForm(trade, onSaved) {
   stSelect.addEventListener('change', drawChecklist);
   drawChecklist();
 
+  // screenshots: saved ones can be deleted at once; new ones are uploaded after the trade is saved
+  const shotsBox = dlg.querySelector('#shots');
+  const pending = [];
+  const drawShots = () => {
+    shotsBox.innerHTML = html`
+      ${(trade?.screenshots ?? []).map((x) => html`<div class="shot">
+        <a href="/uploads/${x.filename}" target="_blank" rel="noopener"><img src="/uploads/${x.filename}" alt="${x.caption || 'screenshot'}"></a>
+        <small>${x.caption || ' '}</small><button type="button" class="danger" data-del="${x.id}">ลบรูป</button></div>`)}
+      ${pending.map((x, i) => html`<div class="shot">
+        <img src="${x.url}" alt="รูปใหม่"><input data-cap="${i}" placeholder="คำบรรยาย" value="${x.caption}">
+        <button type="button" data-drop="${i}">เอาออก</button></div>`)}`.s;
+    shotsBox.querySelectorAll('[data-del]').forEach((b) => armDelete(b, async () => {
+      await api(`/api/screenshots/${b.dataset.del}`, { method: 'DELETE' });
+      trade.screenshots = trade.screenshots.filter((x) => x.id !== Number(b.dataset.del));
+      drawShots();
+    }));
+    shotsBox.querySelectorAll('[data-drop]').forEach((b) => b.addEventListener('click', () => { pending.splice(Number(b.dataset.drop), 1); drawShots(); }));
+    shotsBox.querySelectorAll('[data-cap]').forEach((i) => i.addEventListener('input', () => { pending[Number(i.dataset.cap)].caption = i.value; }));
+  };
+  const addFiles = (files) => {
+    for (const file of files) {
+      if (!/^image\/(png|jpeg|webp)$/.test(file.type)) { toast('รองรับเฉพาะรูป PNG, JPG, WebP'); continue; }
+      if (file.size > 10 * 1024 * 1024) { toast('รูปใหญ่เกิน 10 MB'); continue; }
+      const reader = new FileReader();
+      reader.onload = () => {
+        pending.push({ mime: file.type, data: String(reader.result).split(',')[1], url: reader.result, caption: '' });
+        drawShots();
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+  dlg.querySelector('#shot-file').addEventListener('change', (e) => { addFiles(e.target.files); e.target.value = ''; });
+  dlg.addEventListener('paste', (e) => addFiles([...(e.clipboardData?.files ?? [])]));
+  drawShots();
+
   const preview = dlg.querySelector('#preview');
   const updatePreview = () => {
     const f = Object.fromEntries(new FormData(form));
@@ -158,7 +200,13 @@ export function openTradeForm(trade, onSaved) {
       tags: f.tags, emotion: f.emotion, notes: f.notes,
     };
     try {
-      await api(trade ? `/api/trades/${trade.id}` : '/api/trades', { method: trade ? 'PUT' : 'POST', body });
+      const saved = await api(trade ? `/api/trades/${trade.id}` : '/api/trades', { method: trade ? 'PUT' : 'POST', body });
+      trade = saved; // a failed upload below must not make a retry create the trade twice
+      while (pending.length) {
+        const x = pending[0];
+        await api(`/api/trades/${saved.id}/screenshots`, { method: 'POST', body: { mime: x.mime, data: x.data, caption: x.caption } });
+        pending.shift();
+      }
       close();
       toast('บันทึกแล้ว');
       onSaved();

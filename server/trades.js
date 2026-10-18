@@ -1,4 +1,5 @@
 import { HttpError } from './http.js';
+import { removeUploads } from './screenshots.js';
 
 const COLS = [
   'account_id', 'ticket', 'symbol', 'direction', 'lot', 'entry_price', 'sl', 'tp', 'exit_price',
@@ -116,14 +117,15 @@ export function updateTrade(db, id, body) {
   return getTrade(db, id);
 }
 
-export function tradeRoutes(db) {
+export function tradeRoutes(db, dataDir) {
   return [
     ['GET', '/api/trades', ({ query }) => listTrades(db, Number(query.get('account_id')) || null)],
     ['POST', '/api/trades', ({ body }) => getTrade(db, insertTrade(db, cleanTrade(db, body)))],
     ['PUT', '/api/trades/:id', ({ params, body }) => updateTrade(db, Number(params.id), body ?? {})],
     ['DELETE', '/api/trades/:id', ({ params }) => {
-      getTrade(db, Number(params.id)); // 404 if missing
-      db.prepare('DELETE FROM trades WHERE id = ?').run(Number(params.id));
+      const trade = getTrade(db, Number(params.id)); // 404 if missing
+      db.prepare('DELETE FROM trades WHERE id = ?').run(trade.id); // screenshot rows cascade
+      removeUploads(dataDir, trade.screenshots.map((x) => x.filename));
       return {};
     }],
   ];

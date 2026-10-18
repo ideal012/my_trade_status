@@ -33,6 +33,7 @@ export async function render(view, { query }) {
       <td>${session(t.open_time_utc)}</td>
       <td>${strategyName(t)}</td>
       <td>${checklistText(t)}</td>
+      <td>${t.screenshots.length ? `${t.screenshots.length} รูป` : ''}</td>
       <td class="num ${tone(netPnl(t))}"><b>${signed(netPnl(t))}</b></td>
     </tr>`;
 
@@ -54,7 +55,7 @@ export async function render(view, { query }) {
           <thead><tr>
             <th>เวลาเปิด</th><th>คู่เงิน</th><th>ทิศทาง</th><th class="num">Lot</th>
             <th class="num">Entry</th><th class="num">SL</th><th class="num">TP</th><th class="num">Exit</th>
-            <th class="num">Pips</th><th class="num">RR แผน</th><th class="num">R จริง</th><th>Session</th><th>กลยุทธ์</th><th>Checklist</th>
+            <th class="num">Pips</th><th class="num">RR แผน</th><th class="num">R จริง</th><th>Session</th><th>กลยุทธ์</th><th>Checklist</th><th>รูป</th>
             <th class="num">สุทธิ</th>
           </tr></thead>
           <tbody>${trades.map(row)}</tbody>
