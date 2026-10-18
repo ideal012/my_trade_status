@@ -3,6 +3,12 @@ import { fmtTime, dayKey } from '../lib/time.js';
 import { netPnl, pips, plannedRR, realizedR, session } from '../lib/calc.js';
 import { openTradeForm } from '../lib/trade-form.js';
 
+const strategyName = (t) => state.strategies.find((s) => s.id === t.strategy_id)?.name ?? '—';
+function checklistText(t) {
+  const total = state.strategies.find((s) => s.id === t.strategy_id)?.checklist.length;
+  return total ? `${Math.min(t.checklist_done.length, total)}/${total}` : '—';
+}
+
 export async function render(view, { query }) {
   const tz = state.settings.timezone;
   const day = query.get('day');
@@ -25,6 +31,8 @@ export async function render(view, { query }) {
       <td class="num">${plannedRR(t) == null ? '—' : num(plannedRR(t))}</td>
       <td class="num ${tone(realizedR(t))}">${realizedR(t) == null ? '—' : signed(realizedR(t))}</td>
       <td>${session(t.open_time_utc)}</td>
+      <td>${strategyName(t)}</td>
+      <td>${checklistText(t)}</td>
       <td class="num ${tone(netPnl(t))}"><b>${signed(netPnl(t))}</b></td>
     </tr>`;
 
@@ -46,7 +54,7 @@ export async function render(view, { query }) {
           <thead><tr>
             <th>เวลาเปิด</th><th>คู่เงิน</th><th>ทิศทาง</th><th class="num">Lot</th>
             <th class="num">Entry</th><th class="num">SL</th><th class="num">TP</th><th class="num">Exit</th>
-            <th class="num">Pips</th><th class="num">RR แผน</th><th class="num">R จริง</th><th>Session</th>
+            <th class="num">Pips</th><th class="num">RR แผน</th><th class="num">R จริง</th><th>Session</th><th>กลยุทธ์</th><th>Checklist</th>
             <th class="num">สุทธิ</th>
           </tr></thead>
           <tbody>${trades.map(row)}</tbody>

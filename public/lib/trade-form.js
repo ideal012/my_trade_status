@@ -2,6 +2,7 @@ import { html, raw, state, api, toast, armDelete, num, signed } from './ui.js';
 import { localToUtc, toLocal } from './time.js';
 import { pips, plannedRR, realizedR, netPnl } from './calc.js';
 
+const EMOTIONS = ['มั่นใจ', 'ปกติ', 'ลังเล', 'กลัว', 'โลภ', 'รีบ', 'แก้แค้นตลาด', 'เบื่อ'];
 const SYMBOLS = ['EURUSD', 'GBPUSD', 'USDJPY', 'XAUUSD', 'AUDUSD', 'USDCAD', 'USDCHF', 'NZDUSD', 'EURJPY', 'GBPJPY'];
 
 const field = (label, name, { type = 'number', value = '', required = false, attrs = '', wide = false } = {}) => html`
@@ -13,6 +14,8 @@ const field = (label, name, { type = 'number', value = '', required = false, att
 export function openTradeForm(trade, onSaved) {
   const tz = state.settings.timezone;
   const t = trade ?? {};
+  // active strategies, plus the trade's own even if archived
+  const strategies = state.strategies.filter((st) => !st.archived || st.id === t.strategy_id);
   const nowLocal = toLocal(new Date().toISOString(), tz);
   const dlg = document.createElement('dialog');
   dlg.innerHTML = html`
@@ -51,6 +54,31 @@ export function openTradeForm(trade, onSaved) {
         </div>
       </fieldset>
 
+      <fieldset><legend>③ กลยุทธ์และ checklist</legend>
+        <label>กลยุทธ์ที่ใช้
+          <select name="strategy_id" id="strategy">
+            <option value="">— ไม่ระบุ —</option>
+            ${strategies.map((st) => html`<option value="${st.id}" ${raw(st.id === t.strategy_id ? 'selected' : '')}>${st.name}${st.archived ? ' (เก็บถาวร)' : ''}</option>`)}
+          </select>
+        </label>
+        <div class="checklist" id="checklist"></div>
+      </fieldset>
+
+      <fieldset><legend>④ โน้ตและอารมณ์</legend>
+        <div class="fields">
+          ${field('Tag (คั่นด้วย , เช่น news, A+)', 'tags', { type: 'text', value: (t.tags ?? []).join(', ') })}
+          <label>อารมณ์ตอนเทรด
+            <select name="emotion">
+              <option value="">— ไม่ระบุ —</option>
+              ${EMOTIONS.map((e) => html`<option ${raw(e === t.emotion ? 'selected' : '')}>${e}</option>`)}
+            </select>
+          </label>
+          <label class="wide">โน้ต / เหตุผลที่เข้า / บทเรียน
+            <textarea name="notes">${t.notes ?? ''}</textarea>
+          </label>
+        </div>
+      </fieldset>
+
       <div class="preview" id="preview">กรอก Entry / SL / TP เพื่อดูค่า RR</div>
 
       <div class="dialog-actions">
@@ -77,6 +105,19 @@ export function openTradeForm(trade, onSaved) {
       onSaved();
     });
   }
+
+  // checklist follows the chosen strategy; ticks start from the saved state when the strategy is unchanged
+  const stSelect = dlg.querySelector('#strategy');
+  const ckBox = dlg.querySelector('#checklist');
+  const drawChecklist = () => {
+    const st = state.strategies.find((x) => x.id === Number(stSelect.value));
+    const saved = Number(stSelect.value) === t.strategy_id ? t.checklist_done ?? [] : [];
+    ckBox.innerHTML = st?.checklist.length
+      ? html`${st.checklist.map((item, i) => html`<label><input type="checkbox" name="ck" value="${i}" ${raw(saved.includes(i) ? 'checked' : '')}> ${item}</label>`)}`.s
+      : html`<p class="sub">${st ? 'กลยุทธ์นี้ยังไม่มี checklist' : 'เลือกกลยุทธ์เพื่อดู checklist'}</p>`.s;
+  };
+  stSelect.addEventListener('change', drawChecklist);
+  drawChecklist();
 
   const preview = dlg.querySelector('#preview');
   const updatePreview = () => {
@@ -112,6 +153,9 @@ export function openTradeForm(trade, onSaved) {
       open_time_utc: f.open_time ? localToUtc(f.open_time, tz) : '',
       close_time_utc: f.close_time ? localToUtc(f.close_time, tz) : '',
       profit: f.profit, commission: f.commission, swap: f.swap,
+      strategy_id: f.strategy_id || null,
+      checklist_done: new FormData(form).getAll('ck').map(Number),
+      tags: f.tags, emotion: f.emotion, notes: f.notes,
     };
     try {
       await api(trade ? `/api/trades/${trade.id}` : '/api/trades', { method: trade ? 'PUT' : 'POST', body });

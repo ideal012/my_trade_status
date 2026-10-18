@@ -1,4 +1,4 @@
-import { state, loadBase, destroyCharts, html, setHtml, esc } from './lib/ui.js';
+import { state, hooks, loadBase, destroyCharts, html, setHtml, esc } from './lib/ui.js';
 
 const PAGES = ['dashboard', 'trades', 'analytics', 'strategies', 'import', 'settings'];
 const view = document.getElementById('view');
@@ -35,10 +35,9 @@ document.getElementById('account-select').addEventListener('change', (e) => {
   route();
 });
 
-// Pages call this after changing accounts / strategies / settings.
-window.addEventListener('base-changed', async () => { await loadBase(); fillAccountPicker(); });
+// Pages call loadBase() after changing accounts / strategies / settings; the picker follows.
+hooks.afterBase = fillAccountPicker;
 
 window.addEventListener('hashchange', route);
 await loadBase();
-fillAccountPicker();
 route();

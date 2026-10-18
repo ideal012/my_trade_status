@@ -29,6 +29,8 @@ export async function api(path, { method = 'GET', body } = {}) {
   return data;
 }
 
+export const hooks = { afterBase() {} };
+
 export async function loadBase() {
   const [accounts, settings, strategies] = await Promise.all([
     api('/api/accounts'), api('/api/settings'), api('/api/strategies'),
@@ -40,6 +42,7 @@ export async function loadBase() {
     state.accountId = Number(localStorage.getItem('accountId')) || accounts[0]?.id;
     if (!accounts.some((a) => a.id === state.accountId)) state.accountId = accounts[0]?.id;
   }
+  hooks.afterBase();
 }
 
 export const loadTrades = () => api(`/api/trades?account_id=${state.accountId}`);

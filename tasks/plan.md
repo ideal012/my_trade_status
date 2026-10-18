@@ -75,7 +75,7 @@ settings    key, value   (timezone, default account)
 - [ ] `npm test` ผ่าน, เปิดเว็บแล้วเพิ่ม/แก้/ลบเทรดได้ครบ
 
 ### Phase 2: Journal — กลยุทธ์, checklist, รูป, บัญชี
-- [ ] Task 4: กลยุทธ์ + checklist และผูกกับเทรด (พร้อม tag, อารมณ์, โน้ต)
+- [x] Task 4: กลยุทธ์ + checklist และผูกกับเทรด (พร้อม tag, อารมณ์, โน้ต)
 - [ ] Task 5: แนบ screenshot กราฟ
 - [ ] Task 6: บัญชีหลายบัญชี + ทุนเริ่มต้น + timezone
 
