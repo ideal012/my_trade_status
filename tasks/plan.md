@@ -77,7 +77,7 @@ settings    key, value   (timezone, default account)
 ### Phase 2: Journal — กลยุทธ์, checklist, รูป, บัญชี
 - [x] Task 4: กลยุทธ์ + checklist และผูกกับเทรด (พร้อม tag, อารมณ์, โน้ต)
 - [x] Task 5: แนบ screenshot กราฟ
-- [ ] Task 6: บัญชีหลายบัญชี + ทุนเริ่มต้น + timezone
+- [x] Task 6: บัญชีหลายบัญชี + ทุนเริ่มต้น + timezone
 
 ### Checkpoint: Journal
 - [ ] บันทึกเทรดครบทุกช่องตั้งแต่ต้นจนจบได้ในฟอร์มเดียว
