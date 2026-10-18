@@ -45,3 +45,14 @@ test('default account and timezone are created', async () => {
   const tz = s.db.prepare("SELECT value FROM settings WHERE key = 'timezone'").get();
   assert.equal(tz.value, 'Asia/Bangkok');
 });
+
+test('bundled font files are served for offline use, without path traversal', async () => {
+  const css = await s.call('GET', '/vendor/plex/400.css');
+  assert.equal(css.status, 200);
+  assert.match(css.headers.get('content-type'), /text\/css/);
+  const font = await fetch(`http://127.0.0.1:${s.port}/vendor/plex/files/ibm-plex-sans-thai-thai-400-normal.woff2`);
+  assert.equal(font.status, 200);
+  assert.equal(font.headers.get('content-type'), 'font/woff2');
+  assert.equal(await raw('/vendor/plex/%2e%2e%2fpackage.json'), 404);
+  assert.equal(await raw('/vendor/plex/%2e%2e%2f%2e%2e%2f%2e%2e%2fpackage.json'), 404);
+});

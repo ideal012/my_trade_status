@@ -11,6 +11,8 @@ const TYPES = {
   '.json': 'application/json; charset=utf-8',
   '.svg': 'image/svg+xml',
   '.ico': 'image/x-icon',
+  '.woff2': 'font/woff2',
+  '.woff': 'font/woff',
 };
 const SECURITY_HEADERS = {
   'Content-Security-Policy':
@@ -30,6 +32,7 @@ export function createApp({ db, dataDir, publicDir = join(ROOT, 'public') }) {
   const routes = buildRoutes(db, dataDir).map(compile);
   const publicRoot = resolve(publicDir);
   const chartFile = join(ROOT, 'node_modules', 'chart.js', 'dist', 'chart.umd.js');
+  const fontRoot = join(ROOT, 'node_modules', '@fontsource', 'ibm-plex-sans-thai');
 
   async function serveStatic(pathname) {
     if (pathname === '/vendor/chart.js') {
@@ -39,8 +42,10 @@ export function createApp({ db, dataDir, publicDir = join(ROOT, 'public') }) {
     try { rel = decodeURIComponent(pathname); } catch { throw new HttpError(404, 'ไม่พบหน้านี้'); }
     if (rel === '/') rel = '/index.html';
     if (rel.includes('\0') || rel.includes('\\')) throw new HttpError(404, 'ไม่พบหน้านี้');
-    const file = resolve(publicRoot, '.' + rel);
-    if (!file.startsWith(publicRoot + sep)) throw new HttpError(404, 'ไม่พบหน้านี้');
+    // bundled font (works offline): /vendor/plex/* -> the font package
+    const [root, inner] = rel.startsWith('/vendor/plex/') ? [fontRoot, rel.slice('/vendor/plex'.length)] : [publicRoot, rel];
+    const file = resolve(root, '.' + inner);
+    if (!file.startsWith(root + sep)) throw new HttpError(404, 'ไม่พบหน้านี้');
     const type = TYPES[extname(file)];
     if (!type) throw new HttpError(404, 'ไม่พบหน้านี้');
     try {

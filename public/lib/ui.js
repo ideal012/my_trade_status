@@ -84,9 +84,21 @@ export function destroyCharts() {
   charts = [];
 }
 export function makeChart(canvas, config) {
+  // charts follow the current theme's tokens; pages re-render after a theme switch
+  Chart.defaults.color = COLORS.muted;
+  Chart.defaults.borderColor = COLORS.line;
+  Chart.defaults.font.family = getComputedStyle(document.body).fontFamily;
   config.options = { responsive: true, maintainAspectRatio: false, ...config.options };
   const c = new Chart(canvas, config);
   charts.push(c);
   return c;
 }
-export const COLORS = { pos: '#15803d', neg: '#c62828', accent: '#2563eb', muted: '#98a2b3' };
+const token = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+export const COLORS = {
+  get pos() { return token('--pos'); },
+  get neg() { return token('--neg'); },
+  get negSoft() { return token('--neg-soft'); },
+  get accent() { return token('--text'); },
+  get muted() { return token('--muted'); },
+  get line() { return token('--line'); },
+};

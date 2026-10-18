@@ -10,7 +10,7 @@
 - Dashboard: Equity curve, Max drawdown, Winrate, Profit factor, RR, Calendar กำไรรายวัน
 - Analytics: แยกตามคู่เงิน / Session (Asia, London, New York) / วันในสัปดาห์ / กลยุทธ์ / tag / อารมณ์
 - กรอกเองผ่านฟอร์ม + Import จาก report HTML ของ MT4/MT5
-- ธีมสีขาว (light) อย่างเดียว ภาษาไทย
+- ธีมขาวและดำ สลับได้ (ปุ่มที่แถบเมนู) ภาษาไทย
 
 ## Architecture Decisions
 

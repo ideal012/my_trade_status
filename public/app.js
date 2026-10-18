@@ -35,6 +35,23 @@ document.getElementById('account-select').addEventListener('change', (e) => {
   route();
 });
 
+// Light / dark theme (the first choice is made in theme.js before the page paints).
+const themeBtn = document.getElementById('theme-toggle');
+function showThemeButton() {
+  const dark = document.documentElement.dataset.theme === 'dark';
+  themeBtn.querySelector('use').setAttribute('href', dark ? '#i-sun' : '#i-moon');
+  themeBtn.querySelector('span').textContent = dark ? 'โหมดสว่าง' : 'โหมดมืด';
+  themeBtn.setAttribute('aria-label', dark ? 'เปลี่ยนเป็นโหมดสว่าง' : 'เปลี่ยนเป็นโหมดมืด');
+}
+themeBtn.addEventListener('click', () => {
+  const next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
+  document.documentElement.dataset.theme = next;
+  try { localStorage.setItem('theme', next); } catch { /* not saved, still switches */ }
+  showThemeButton();
+  route(); // redraw charts with the new colours
+});
+showThemeButton();
+
 // Pages call loadBase() after changing accounts / strategies / settings; the picker follows.
 hooks.afterBase = fillAccountPicker;
 

@@ -83,7 +83,7 @@ function drawEquity(canvas, series, tz) {
         { label: 'จุดสูงสุดเดิม', data: peaks, borderColor: COLORS.muted, borderDash: [4, 4], borderWidth: 1, pointRadius: 0, fill: false },
         {
           label: 'Equity', data: series.map((p) => p.equity), borderColor: COLORS.accent, borderWidth: 2,
-          pointRadius: series.length < 40 ? 3 : 0, tension: 0.15, fill: '-1', backgroundColor: 'rgba(198, 40, 40, 0.14)',
+          pointRadius: series.length < 40 ? 3 : 0, tension: 0.15, fill: '-1', backgroundColor: COLORS.negSoft,
         },
       ],
     },
