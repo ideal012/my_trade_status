@@ -98,7 +98,7 @@ export const COLORS = {
   get pos() { return token('--pos'); },
   get neg() { return token('--neg'); },
   get negSoft() { return token('--neg-soft'); },
-  get accent() { return token('--text'); },
+  get accent() { return token('--accent'); },
   get muted() { return token('--muted'); },
   get line() { return token('--line'); },
 };

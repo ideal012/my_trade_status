@@ -47,21 +47,25 @@ export async function render(view) {
       ${card('Winrate', pct(st.winrate), { big: true, hint: `ชนะ ${st.wins} · แพ้ ${st.losses} · จาก ${st.count} ไม้` })}
       ${card('Profit Factor', st.profitFactor == null ? '—' : num(st.profitFactor), { big: true, hint: 'กำไรรวม ÷ ขาดทุนรวม (>1 = กำไร)' })}
     </div>
-    <div class="grid">
-      ${card('กำไรเฉลี่ยต่อไม้ชนะ', signed(st.avgWin), { cls: 'pos' })}
-      ${card('ขาดทุนเฉลี่ยต่อไม้แพ้', signed(st.avgLoss), { cls: 'neg' })}
-      ${card('R เฉลี่ย', st.avgR == null ? '—' : signed(st.avgR), { cls: tone(st.avgR), hint: 'กำไร/ขาดทุนเป็นเท่าของความเสี่ยง (ต้องมี SL)' })}
-      ${card('Expectancy ต่อไม้', signed(st.expectancy), { cls: tone(st.expectancy), hint: 'คาดว่าได้/เสียเฉลี่ยต่อไม้' })}
-      ${card('Max Drawdown', st.count ? `−${num(st.maxDrawdown.amount)}` : '—', { cls: st.maxDrawdown.amount ? 'neg' : '', hint: st.count ? `−${num(st.maxDrawdown.pct)}% จากจุดสูงสุด` : '' })}
-      ${card('ชนะติดกันสูงสุด', st.maxWinStreak, { hint: 'ไม้' })}
-      ${card('แพ้ติดกันสูงสุด', st.maxLossStreak, { hint: 'ไม้' })}
-      ${card('ความเสี่ยงเฉลี่ยต่อไม้', risk.avg == null ? '—' : `${num(risk.avg)}%`, { cls: risk.avg > maxRisk() ? 'neg' : '', hint: `% ของทุนก่อนเข้าไม้ · กฎ ≤ ${num(maxRisk())}%` })}
-      ${card('ไม้ที่เสี่ยงเกินกฎ', risk.known ? risk.over : '—', { cls: risk.over ? 'neg' : 'pos', hint: risk.known ? `จาก ${risk.known} ไม้ที่คำนวณได้` : 'ต้องมี SL' })}
-    </div>
-
-    <div class="card">
-      <h2>Equity curve <small class="sub">เส้นทุนหลังปิดแต่ละไม้ · แรเงาแดง = ช่วงที่ทุนต่ำกว่าจุดสูงสุดเดิม (drawdown)</small></h2>
-      ${st.count ? html`<div class="chart-box"><canvas id="equity"></canvas></div>` : html`<div class="empty">ยังไม่มีเทรดในช่วงนี้</div>`}
+    <div class="split">
+      <div class="card">
+        <h2>Equity curve <small class="sub">เส้นทุนหลังปิดแต่ละไม้ · แรเงาแดง = drawdown</small></h2>
+        ${st.count ? html`<div class="chart-box"><canvas id="equity"></canvas></div>` : html`<div class="empty">ยังไม่มีเทรดในช่วงนี้</div>`}
+      </div>
+      <div class="card">
+        <h2>สรุปช่วงนี้</h2>
+        <ul class="kv">
+          <li><span>กำไรเฉลี่ยต่อไม้ชนะ</span><b class="pos">${signed(st.avgWin)}</b></li>
+          <li><span>ขาดทุนเฉลี่ยต่อไม้แพ้</span><b class="neg">${signed(st.avgLoss)}</b></li>
+          <li><span>R เฉลี่ย<small>เท่าของความเสี่ยง (ต้องมี SL)</small></span><b class="${tone(st.avgR)}">${st.avgR == null ? '—' : signed(st.avgR)}</b></li>
+          <li><span>Expectancy ต่อไม้</span><b class="${tone(st.expectancy)}">${signed(st.expectancy)}</b></li>
+          <li><span>Max Drawdown<small>${st.count ? `−${num(st.maxDrawdown.pct)}% จากจุดสูงสุด` : ''}</small></span><b class="${st.maxDrawdown.amount ? 'neg' : ''}">${st.count ? `−${num(st.maxDrawdown.amount)}` : '—'}</b></li>
+          <li><span>ชนะติดกันสูงสุด</span><b>${st.maxWinStreak} ไม้</b></li>
+          <li><span>แพ้ติดกันสูงสุด</span><b>${st.maxLossStreak} ไม้</b></li>
+          <li><span>ความเสี่ยงเฉลี่ยต่อไม้<small>กฎ ≤ ${num(maxRisk())}% ของทุน</small></span><b class="${risk.avg > maxRisk() ? 'neg' : ''}">${risk.avg == null ? '—' : `${num(risk.avg)}%`}</b></li>
+          <li><span>ไม้ที่เสี่ยงเกินกฎ<small>${risk.known ? `จาก ${risk.known} ไม้ที่คำนวณได้` : 'ต้องมี SL'}</small></span><b class="${risk.over ? 'neg' : 'pos'}">${risk.known ? risk.over : '—'}</b></li>
+        </ul>
+      </div>
     </div>
 
     <div class="card" id="calendar"></div>`);
