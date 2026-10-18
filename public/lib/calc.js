@@ -1,3 +1,5 @@
+import { dayKey, weekdayOf } from './time.js';
+
 // Trade maths. Pure functions (no DOM, no DB) so they run in the browser and under node:test.
 
 export const netPnl = (t) => t.profit + t.commission + t.swap;
@@ -31,4 +33,97 @@ export function session(openIso) {
   if (h >= 12 && h < 16) return 'London/NY';
   if (h >= 16 && h < 21) return 'New York';
   return 'Asia';
+}
+
+// ---- aggregate statistics ----
+
+const byClose = (trades) => [...trades].sort((a, b) => a.close_time_utc.localeCompare(b.close_time_utc) || a.id - b.id);
+
+// Equity after each closed trade (in close order), starting from the initial capital.
+export function equitySeries(trades, initial) {
+  let equity = initial;
+  const points = [{ t: null, equity, n: 0 }];
+  byClose(trades).forEach((t, i) => {
+    equity += netPnl(t);
+    points.push({ t: t.close_time_utc, equity, n: i + 1 });
+  });
+  return points;
+}
+
+export function maxDrawdown(series) {
+  let peak = -Infinity;
+  let best = { amount: 0, pct: 0 };
+  for (const { equity } of series) {
+    peak = Math.max(peak, equity);
+    const amount = peak - equity;
+    if (amount > best.amount) best = { amount, pct: peak > 0 ? (amount / peak) * 100 : 0 };
+  }
+  return best;
+}
+
+export function stats(trades, initial) {
+  const sorted = byClose(trades);
+  const nets = sorted.map(netPnl);
+  const wins = nets.filter((n) => n > 0);
+  const losses = nets.filter((n) => n < 0);
+  const sum = (a) => a.reduce((x, y) => x + y, 0);
+  const grossWin = sum(wins);
+  const grossLoss = sum(losses);
+  const net = sum(nets);
+  const rs = sorted.map(realizedR).filter((r) => r != null);
+
+  let maxWinStreak = 0;
+  let maxLossStreak = 0;
+  let w = 0;
+  let l = 0;
+  for (const n of nets) {
+    w = n > 0 ? w + 1 : 0;
+    l = n < 0 ? l + 1 : 0;
+    maxWinStreak = Math.max(maxWinStreak, w);
+    maxLossStreak = Math.max(maxLossStreak, l);
+  }
+
+  return {
+    count: nets.length,
+    wins: wins.length,
+    losses: losses.length,
+    winrate: nets.length ? (wins.length / nets.length) * 100 : null,
+    net,
+    equity: initial + net,
+    growthPct: initial > 0 ? (net / initial) * 100 : null,
+    grossWin,
+    grossLoss,
+    profitFactor: losses.length && wins.length ? grossWin / -grossLoss : null,
+    avgWin: wins.length ? grossWin / wins.length : null,
+    avgLoss: losses.length ? grossLoss / losses.length : null,
+    avgR: rs.length ? sum(rs) / rs.length : null,
+    expectancy: nets.length ? net / nets.length : null,
+    maxDrawdown: maxDrawdown(equitySeries(trades, initial)),
+    maxWinStreak,
+    maxLossStreak,
+    best: sorted.reduce((b, t) => (!b || netPnl(t) > netPnl(b) ? t : b), null),
+    worst: sorted.reduce((b, t) => (!b || netPnl(t) < netPnl(b) ? t : b), null),
+  };
+}
+
+// ---- date ranges (by day of close, in the display timezone) ----
+
+const addDays = (day, n) => {
+  const [y, m, d] = day.split('-').map(Number);
+  return new Date(Date.UTC(y, m - 1, d + n)).toISOString().slice(0, 10);
+};
+
+// kind: 'week' (Monday start) | 'month' | 'all'. Returns { from, to } as 'YYYY-MM-DD' (null = open) or null for all.
+export function rangeBounds(kind, timeZone, now = new Date()) {
+  const iso = now.toISOString();
+  const today = dayKey(iso, timeZone);
+  if (kind === 'week') return { from: addDays(today, -weekdayOf(iso, timeZone)), to: null };
+  if (kind === 'month') return { from: `${today.slice(0, 8)}01`, to: null };
+  return null;
+}
+
+export function inRange(trade, range, timeZone) {
+  if (!range) return true;
+  const day = dayKey(trade.close_time_utc, timeZone);
+  return (!range.from || day >= range.from) && (!range.to || day <= range.to);
 }

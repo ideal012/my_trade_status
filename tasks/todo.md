@@ -156,7 +156,7 @@
 
 ## Phase 3: Dashboard & Analytics — กราฟ
 
-### - [ ] Task 7: Module สถิติ + การ์ดตัวเลขหน้าภาพรวม
+### - [x] Task 7: Module สถิติ + การ์ดตัวเลขหน้าภาพรวม
 
 **Description:** เพิ่มใน `calc.js`: จำนวนไม้, winrate, net P/L, ทุนปัจจุบัน (ทุนเริ่มต้น + net), % เติบโต, profit factor, avg win / avg loss, avg R, expectancy, max drawdown (เงินและ %), ชนะ/แพ้ติดกันสูงสุด หน้า "ภาพรวม" แสดงเป็นการ์ดเรียงตามความสำคัญ + ตัวกรองช่วงเวลา (สัปดาห์นี้/เดือนนี้/ทั้งหมด/กำหนดเอง)
 

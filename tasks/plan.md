@@ -83,7 +83,7 @@ settings    key, value   (timezone, default account)
 - [ ] บันทึกเทรดครบทุกช่องตั้งแต่ต้นจนจบได้ในฟอร์มเดียว
 
 ### Phase 3: Dashboard & Analytics — กราฟ
-- [ ] Task 7: Module สถิติ + การ์ดตัวเลขหน้าภาพรวม
+- [x] Task 7: Module สถิติ + การ์ดตัวเลขหน้าภาพรวม
 - [ ] Task 8: Equity curve + Calendar กำไรรายวัน
 - [ ] Task 9: หน้าวิเคราะห์ แยกตามคู่เงิน/Session/วัน/กลยุทธ์/tag/อารมณ์
 
