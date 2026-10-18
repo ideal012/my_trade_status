@@ -2,6 +2,7 @@ import { accountRoutes } from './accounts.js';
 import { strategyRoutes } from './strategies.js';
 import { tradeRoutes } from './trades.js';
 import { screenshotRoutes } from './screenshots.js';
+import { exportRoutes } from './export.js';
 
 // Each route: [method, '/api/path/:id', async ({ params, query, body }) => object | Reply]
 export function buildRoutes(db, dataDir) {
@@ -11,5 +12,6 @@ export function buildRoutes(db, dataDir) {
     ...strategyRoutes(db),
     ...tradeRoutes(db, dataDir),
     ...screenshotRoutes(db, dataDir),
+    ...exportRoutes(db, dataDir),
   ];
 }

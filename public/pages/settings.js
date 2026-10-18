@@ -33,9 +33,27 @@ export async function render(view) {
     <h2 style="margin-top:24px">บัญชี</h2>
     ${state.accounts.map(accountForm)}
     <h2 style="margin-top:24px">เพิ่มบัญชีใหม่</h2>
-    ${accountForm(null)}`);
+    ${accountForm(null)}
+
+    <h2 style="margin-top:24px">ข้อมูลและการสำรอง</h2>
+    <div class="card">
+      <p>ข้อมูลทั้งหมดอยู่ในโฟลเดอร์ <code>data</code> ของโปรแกรม (ไฟล์ <code>journal.db</code> และโฟลเดอร์ <code>uploads</code> ที่เก็บรูป) การสำรองที่ง่ายที่สุดคือคัดลอกโฟลเดอร์นี้เก็บไว้</p>
+      <div class="row">
+        <a class="btn" href="/api/export.csv?account_id=${state.accountId}" download="trades.csv">ดาวน์โหลดเทรดของบัญชีนี้เป็น CSV (เปิดด้วย Excel)</a>
+        <button id="backup">สำรองฐานข้อมูลตอนนี้</button>
+        <span id="backup-msg" class="sub"></span>
+      </div>
+    </div>`);
 
   const again = async () => { await loadBase(); render(view); };
+
+  view.querySelector('#backup').addEventListener('click', async () => {
+    const msg = view.querySelector('#backup-msg');
+    try {
+      const r = await api('/api/backup', { method: 'POST' });
+      msg.textContent = `สำรองแล้ว: data/${r.file.replaceAll('\\', '/')} (ไม่รวมรูป screenshot ให้คัดลอกโฟลเดอร์ data/uploads ด้วย)`;
+    } catch (err) { msg.textContent = err.message; }
+  });
 
   view.querySelector('#tz').addEventListener('change', async (e) => {
     await api('/api/settings', { method: 'PUT', body: { timezone: e.target.value } });

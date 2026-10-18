@@ -270,7 +270,7 @@
 
 ---
 
-### - [ ] Task 12: Export CSV + Backup + README + start.bat
+### - [x] Task 12: Export CSV + Backup + README + start.bat
 
 **Description:** หน้าตั้งค่ามีปุ่ม "ดาวน์โหลดเทรดเป็น CSV" (เปิดใน Excel ได้ ภาษาไทยไม่เพี้ยน) และ "Backup ฐานข้อมูล" (สร้างสำเนา `data/backups/journal-YYYYMMDD-HHmm.db` ด้วย `VACUUM INTO`) เขียน README ภาษาไทย: ติดตั้ง Node, วิธีรัน, วิธี export report จาก MT4/MT5, วิธี backup/ย้ายเครื่อง และ `start.bat` สำหรับดับเบิลคลิกเปิดเว็บ
 

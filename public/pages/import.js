@@ -76,6 +76,7 @@ export async function render(view) {
       e.target.disabled = true;
       try {
         const r = await api('/api/trades/import', { method: 'POST', body: { account_id: state.accountId, trades: parsed.trades } });
+        parsed.trades.forEach((t) => existing.add(t.ticket)); // choosing another file next must see these as already imported
         toast(`นำเข้า ${r.inserted} ไม้แล้ว`);
         setHtml(result, html`<div class="card"><h2>นำเข้าเสร็จแล้ว</h2><p>เพิ่ม <b>${r.inserted}</b> ไม้ · ข้ามที่ซ้ำ ${r.skipped} ไม้</p>
           <p><a class="btn" href="#/trades">ดูรายการเทรด</a> <a class="btn" href="#/dashboard">ดูภาพรวม</a></p></div>`);

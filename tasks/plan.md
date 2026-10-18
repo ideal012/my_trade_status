@@ -93,7 +93,7 @@ settings    key, value   (timezone, default account)
 ### Phase 4: Import & ความปลอดภัยข้อมูล
 - [x] Task 10: Import report HTML จาก MT5
 - [x] Task 11: Import statement HTML จาก MT4
-- [ ] Task 12: Export CSV + Backup DB + README วิธีใช้ + start.bat
+- [x] Task 12: Export CSV + Backup DB + README วิธีใช้ + start.bat
 
 ### Checkpoint: Complete
 - [ ] ทุก acceptance criteria ผ่าน, ใช้งานจริงด้วยข้อมูลของผู้ใช้ได้
