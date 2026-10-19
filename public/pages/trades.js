@@ -28,7 +28,7 @@ export async function render(view, { query }) {
   };
 
   const row = (t) => html`
-    <tr class="clickable" data-id="${t.id}">
+    <tr class="clickable" data-id="${t.id}" tabindex="0" role="button" aria-label="แก้ไขเทรด ${t.symbol}">
       <td>${fmtTime(t.open_time_utc, tz)}</td>
       <td><b>${t.symbol}</b></td>
       <td><span class="badge ${t.direction}">${t.direction === 'buy' ? 'BUY' : 'SELL'}</span></td>
@@ -63,7 +63,7 @@ export async function render(view, { query }) {
       <div class="card stat"><div class="label">กำไรสุทธิ</div><div class="value ${tone(sum.net)}">${signed(sum.net)}</div></div>
     </div>
     <div class="toolbar">
-      <input id="symbol-filter" placeholder="ค้นหาคู่เงิน เช่น EURUSD" value="${symbolFilter}">
+      <input id="symbol-filter" aria-label="ค้นหาคู่เงิน" placeholder="ค้นหาคู่เงิน เช่น EURUSD" value="${symbolFilter}">
       ${day ? html`<a class="btn" href="#/trades">ล้างตัวกรองวัน</a>` : ''}
     </div>
     <div class="card table-wrap">
@@ -86,8 +86,10 @@ export async function render(view, { query }) {
     e.target.value.trim() ? q.set('symbol', e.target.value.trim()) : q.delete('symbol');
     location.hash = `#/trades?${q}`;
   });
-  view.querySelector('tbody')?.addEventListener('click', (e) => {
+  const openRow = (e) => {
     const tr = e.target.closest('tr[data-id]');
     if (tr) openTradeForm(all.find((t) => t.id === Number(tr.dataset.id)), again, equity);
-  });
+  };
+  view.querySelector('tbody')?.addEventListener('click', openRow);
+  view.querySelector('tbody')?.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openRow(e); } });
 }

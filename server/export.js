@@ -1,4 +1,4 @@
-import { mkdirSync } from 'node:fs';
+import { mkdirSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { Reply } from './http.js';
 import { listTrades } from './trades.js';
@@ -38,7 +38,8 @@ export function exportRoutes(db, dataDir) {
     }],
     ['POST', '/api/backup', () => {
       mkdirSync(join(dataDir, 'backups'), { recursive: true });
-      const file = join('backups', `journal-${stamp()}.db`);
+      let file = join('backups', `journal-${stamp()}.db`);
+      for (let n = 2; existsSync(join(dataDir, file)); n++) file = join('backups', `journal-${stamp()}-${n}.db`);
       db.prepare('VACUUM INTO ?').run(join(dataDir, file));
       return { file };
     }],

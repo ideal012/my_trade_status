@@ -52,7 +52,7 @@ const cleanText = (s) => s
 function readRows(html) {
   return html.split(/<tr\b/i).slice(1).map((tr) => tr.split(/<t[dh]\b/i).slice(1).flatMap((td) => {
     const gt = td.indexOf('>');
-    const span = Number(/colspan\s*=\s*["']?(\d+)/i.exec(td.slice(0, gt))?.[1] ?? 1);
+    const span = Math.min(Math.max(Number(/colspan\s*=\s*["']?(\d+)/i.exec(td.slice(0, gt))?.[1]) || 1, 1), 50); // capped: a crafted file must not allocate billions of cells
     return [cleanText(td.slice(gt + 1)), ...Array(span - 1).fill('')];
   }));
 }

@@ -165,3 +165,10 @@ test('MT4 statement with Thai headers and Thai buy/sell words matches the Englis
   assert.deepEqual(thai.errors, []);
   assert.deepEqual(thai.trades, english.trades);
 });
+
+test('a huge colspan in a report cannot exhaust memory', () => {
+  const evil = fixture('mt5-report.html').replace('<td colspan="2"><b>Volume</b></td>', '<td colspan="4000000000"><b>Volume</b></td>');
+  const t0 = Date.now();
+  assert.doesNotThrow(() => parseReport(evil, 3));
+  assert.ok(Date.now() - t0 < 2000);
+});

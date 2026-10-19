@@ -56,7 +56,7 @@ export async function render(view) {
     <div class="split">
       <div class="card">
         <h2>Equity curve <small class="sub">เส้นทุนหลังปิดแต่ละไม้ · แรเงาแดง = drawdown</small></h2>
-        ${st.count ? html`<div class="chart-box"><canvas id="equity"></canvas></div>` : html`<div class="empty">ยังไม่มีเทรดในช่วงนี้</div>`}
+        ${st.count ? html`<div class="chart-box"><canvas id="equity" role="img" aria-label="กราฟเส้น Equity ตามจำนวนไม้ พร้อมแรเงาช่วง drawdown"></canvas></div>` : html`<div class="empty">ยังไม่มีเทรดในช่วงนี้</div>`}
       </div>
       <div class="card">
         <h2>สรุปช่วงนี้</h2>
@@ -78,18 +78,18 @@ export async function render(view) {
       <div class="card">
         <h2>ชนะ / แพ้</h2>
         <div class="donut">
-          ${st.count ? html`<canvas id="ring"></canvas>` : ''}
+          ${st.count ? html`<canvas id="ring" role="img" aria-label="วงแหวนสัดส่วนไม้ชนะ แพ้ เสมอ"></canvas>` : ''}
           <div class="center"><b>${pct(st.winrate, 0)}</b><span>Winrate</span></div>
         </div>
         <p class="legend"><span class="pos">● ชนะ ${st.wins}</span> <span class="neg">● แพ้ ${st.losses}</span>${st.count - st.wins - st.losses ? html` <span>● เสมอ ${st.count - st.wins - st.losses}</span>` : ''}</p>
       </div>
       <div class="card">
         <h2>กำไร/ขาดทุนรายวัน <small class="sub">30 วันเทรดล่าสุดในช่วงนี้</small></h2>
-        ${st.count ? html`<div class="chart-box short"><canvas id="daily"></canvas></div>` : html`<div class="empty">ยังไม่มีเทรดในช่วงนี้</div>`}
+        ${st.count ? html`<div class="chart-box short"><canvas id="daily" role="img" aria-label="กราฟแท่งกำไรขาดทุนรายวัน"></canvas></div>` : html`<div class="empty">ยังไม่มีเทรดในช่วงนี้</div>`}
       </div>
       <div class="card">
         <h2>กำไรตามอารมณ์ <small class="sub">ที่ติดไว้ในแต่ละไม้</small></h2>
-        <div class="chart-box short"><canvas id="mood"></canvas></div>
+        <div class="chart-box short"><canvas id="mood" role="img" aria-label="กราฟแท่งกำไรขาดทุนตามอารมณ์"></canvas></div>
         <div class="empty" id="mood-empty" hidden>ยังไม่ได้เลือกอารมณ์ในไม้ไหนเลย — เลือกในฟอร์มเทรดช่อง "อารมณ์ตอนเทรด" เพื่อดูว่าอารมณ์ไหนทำเงิน อารมณ์ไหนเสียเงิน</div>
       </div>
     </div>
@@ -97,7 +97,7 @@ export async function render(view) {
     <div class="card table-wrap">
       <div class="page-head" style="margin:14px 20px 4px"><h2>เทรดล่าสุด</h2><a href="#/trades">ดูทั้งหมด →</a></div>
       ${st.count ? html`<table><thead><tr><th>ปิดเมื่อ</th><th>คู่เงิน</th><th>ทิศทาง</th><th class="num">สุทธิ</th><th>กลยุทธ์</th><th>อารมณ์</th></tr></thead>
-        <tbody>${lastTrades(inside, 6).map((t) => html`<tr class="clickable" data-day="${dayKey(t.close_time_utc, tz)}">
+        <tbody>${lastTrades(inside, 6).map((t) => html`<tr class="clickable" data-day="${dayKey(t.close_time_utc, tz)}" tabindex="0" role="link" aria-label="ดูเทรดของวันที่ปิด ${t.symbol}">
           <td>${fmtTime(t.close_time_utc, tz)}</td><td><b>${t.symbol}</b></td>
           <td><span class="badge ${t.direction}">${t.direction === 'buy' ? 'BUY' : 'SELL'}</span></td>
           <td class="num ${tone(netPnl(t))}"><b>${signed(netPnl(t))}</b></td>
@@ -116,7 +116,11 @@ export async function render(view) {
     view.querySelector('.chart-box:has(#mood)').hidden = true;
     view.querySelector('#mood-empty').hidden = false;
   }
-  view.querySelectorAll('tr[data-day]').forEach((tr) => tr.addEventListener('click', () => { location.hash = `#/trades?day=${tr.dataset.day}`; }));
+  view.querySelectorAll('tr[data-day]').forEach((tr) => {
+    const go = () => { location.hash = `#/trades?day=${tr.dataset.day}`; };
+    tr.addEventListener('click', go);
+    tr.addEventListener('keydown', (e) => { if (e.key === 'Enter') go(); });
+  });
   drawCalendar(view, all, tz, cur);
 
   bindRangeBar(view, sel, () => render(view));
@@ -212,7 +216,11 @@ function drawCalendar(view, all, tz, cur) {
     view.querySelector('.chart-box:has(#mood)').hidden = true;
     view.querySelector('#mood-empty').hidden = false;
   }
-  view.querySelectorAll('tr[data-day]').forEach((tr) => tr.addEventListener('click', () => { location.hash = `#/trades?day=${tr.dataset.day}`; }));
+  view.querySelectorAll('tr[data-day]').forEach((tr) => {
+    const go = () => { location.hash = `#/trades?day=${tr.dataset.day}`; };
+    tr.addEventListener('click', go);
+    tr.addEventListener('keydown', (e) => { if (e.key === 'Enter') go(); });
+  });
   drawCalendar(view, all, tz, cur);
   }));
   box.querySelectorAll('[data-day]').forEach((el) => {

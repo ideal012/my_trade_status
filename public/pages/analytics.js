@@ -52,7 +52,7 @@ export async function render(view) {
     <div class="tabs">${tabs.map((x) => html`<button class="seg ${x.id === tab.id ? 'active' : ''}" data-tab="${x.id}">${x.label}</button>`)}</div>
     ${rows.length ? html`
       ${tab.note ? html`<p class="sub">${tab.note}</p>` : ''}
-      <div class="card"><div class="chart-box"><canvas id="bars"></canvas></div></div>
+      <div class="card"><div class="chart-box"><canvas id="bars" role="img" aria-label="กราฟแท่งกำไรสุทธิแยกตามกลุ่มที่เลือก (ตัวเลขเดียวกันอยู่ในตารางด้านล่าง)"></canvas></div></div>
       <div class="card table-wrap">
         <table>
           <thead><tr><th>${tab.label}</th><th class="num">จำนวนไม้</th><th class="num">Winrate</th><th class="num">กำไรสุทธิ</th><th class="num">เฉลี่ย/ไม้</th><th class="num">R เฉลี่ย</th></tr></thead>

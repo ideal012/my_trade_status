@@ -66,3 +66,11 @@ test('deleting a trade removes its screenshot files', async () => {
   assert.equal(s.db.prepare('SELECT COUNT(*) AS n FROM screenshots WHERE trade_id = ?').get(id).n, 0);
   assert.ok(Array.isArray(readdirSync(uploadsDir())));
 });
+
+test('a trade holds at most 30 screenshots', async () => {
+  const id = await newTrade();
+  for (let i = 0; i < 30; i++) assert.equal((await upload(id)).status, 200);
+  const over = await upload(id);
+  assert.equal(over.status, 400);
+  assert.match(over.json.error, /30/);
+});

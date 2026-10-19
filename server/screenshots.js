@@ -4,6 +4,7 @@ import { join } from 'node:path';
 import { HttpError, Reply } from './http.js';
 
 const MAX_BYTES = 10 * 1024 * 1024;
+const MAX_PER_TRADE = 30;
 const startsWith = (buf, hex) => buf.subarray(0, hex.length / 2).equals(Buffer.from(hex, 'hex'));
 
 // Only these types are accepted, and the file content must match the claimed type
@@ -26,6 +27,7 @@ export function screenshotRoutes(db, dataDir) {
     ['POST', '/api/trades/:id/screenshots', ({ params, body }) => {
       const tradeId = Number(params.id);
       if (!db.prepare('SELECT 1 FROM trades WHERE id = ?').get(tradeId)) throw new HttpError(404, 'ไม่พบเทรดนี้');
+      if (db.prepare('SELECT COUNT(*) AS n FROM screenshots WHERE trade_id = ?').get(tradeId).n >= MAX_PER_TRADE) throw new HttpError(400, `แนบรูปได้ไม่เกิน ${MAX_PER_TRADE} รูปต่อไม้`);
       const kind = KINDS[body?.mime];
       if (!kind) throw new HttpError(400, 'รองรับเฉพาะรูป PNG, JPG, WebP');
       const bytes = Buffer.from(String(body.data ?? ''), 'base64');

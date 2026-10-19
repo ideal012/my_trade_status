@@ -56,3 +56,20 @@ test('bundled font files are served for offline use, without path traversal', as
   assert.equal(await raw('/vendor/plex/%2e%2e%2fpackage.json'), 404);
   assert.equal(await raw('/vendor/plex/%2e%2e%2f%2e%2e%2f%2e%2e%2fpackage.json'), 404);
 });
+
+test('Origin "null" and foreign origins are refused with 403, not 500', async () => {
+  for (const origin of ['null', 'http://evil.example.com', 'not a url']) {
+    const res = await fetch(`http://127.0.0.1:${s.port}/api/trades`, { method: 'POST', headers: { 'content-type': 'application/json', Origin: origin }, body: '{}' });
+    assert.equal(res.status, 403, origin);
+  }
+});
+
+test('CSP also locks base-uri, form-action and object-src', async () => {
+  const csp = (await s.call('GET', '/')).headers.get('content-security-policy');
+  for (const d of ["base-uri 'self'", "form-action 'self'", "object-src 'none'"]) assert.ok(csp.includes(d), d);
+});
+
+test('a JSON null body is a 400, not a crash', async () => {
+  assert.equal((await s.call('POST', '/api/trades', null)).status, 400);
+  assert.equal((await s.call('POST', '/api/accounts', null)).status, 400);
+});

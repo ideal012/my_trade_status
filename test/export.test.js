@@ -42,3 +42,10 @@ test('backup writes a database copy that holds the data', async () => {
   assert.ok(copy.prepare('SELECT COUNT(*) AS n FROM trades').get().n >= 1);
   copy.close();
 });
+
+test('two backups in the same second do not collide', async () => {
+  const [a, b] = [await s.call('POST', '/api/backup'), await s.call('POST', '/api/backup')];
+  assert.equal(a.status, 200);
+  assert.equal(b.status, 200);
+  assert.notEqual(a.json.file, b.json.file);
+});

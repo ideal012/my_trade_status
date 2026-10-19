@@ -163,7 +163,7 @@ export function importTrades(db, body) {
 export function tradeRoutes(db, dataDir) {
   return [
     ['GET', '/api/trades', ({ query }) => listTrades(db, Number(query.get('account_id')) || null)],
-    ['POST', '/api/trades', ({ body }) => getTrade(db, insertTrade(db, cleanTrade(db, body)))],
+    ['POST', '/api/trades', ({ body }) => getTrade(db, insertTrade(db, cleanTrade(db, body ?? {})))],
     ['POST', '/api/trades/import', ({ body }) => importTrades(db, body)],
     ['PUT', '/api/trades/:id', ({ params, body }) => updateTrade(db, Number(params.id), body ?? {})],
     ['DELETE', '/api/trades/:id', ({ params }) => {

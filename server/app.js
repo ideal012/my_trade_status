@@ -16,11 +16,15 @@ const TYPES = {
 };
 const SECURITY_HEADERS = {
   'Content-Security-Policy':
-    "default-src 'self'; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline'; frame-ancestors 'none'",
+    "default-src 'self'; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'",
   'X-Content-Type-Options': 'nosniff',
   'Referrer-Policy': 'no-referrer',
 };
 const LOCAL_HOST = /^(localhost|127\.0\.0\.1)(:\d+)?$/;
+
+const sameHost = (origin, host) => {
+  try { return new URL(origin).host === host; } catch { return false; } // 'null' and junk origins are foreign
+};
 
 const compile = ([method, path, handler]) => ({
   method,
@@ -58,7 +62,7 @@ export function createApp({ db, dataDir, publicDir = join(ROOT, 'public') }) {
   async function dispatch(req) {
     if (!LOCAL_HOST.test(req.headers.host ?? '')) throw new HttpError(403, 'ไม่อนุญาต');
     const origin = req.headers.origin;
-    if (origin && new URL(origin).host !== req.headers.host) throw new HttpError(403, 'ไม่อนุญาต');
+    if (origin && !sameHost(origin, req.headers.host)) throw new HttpError(403, 'ไม่อนุญาต');
 
     const url = new URL(req.url, 'http://localhost');
     if (!url.pathname.startsWith('/api/') && !url.pathname.startsWith('/uploads/')) {
