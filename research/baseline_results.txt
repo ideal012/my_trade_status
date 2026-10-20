@@ -1,0 +1,10 @@
+Data 2017-01-03 .. 2026-10-19 (2528 bars), median spread $0.10
+Buy&Hold (1x notional): {'net': '+138%', 'price_only': '+261%', 'swap': '-122%', 'maxDD': '-41%'}
+Trend D1        base   {'trades': 188, 'win': '46%', 'avgR': 0.09, 'PF': 1.67, 'net': '+18%', 'maxDD': '-6%', 'swap': '-7.2%', 'long_R': 17.5, 'short_R': 0.3}
+Trend D1        stress {'trades': 188, 'win': '43%', 'avgR': 0.07, 'PF': 1.5, 'net': '+14%', 'maxDD': '-6%', 'swap': '-10.9%', 'long_R': 13.5, 'short_R': 0.5}
+                 by year: 2018:-0.7R 2019:+3.5R 2020:+4.6R 2021:-3.0R 2022:+0.6R 2023:-0.3R 2024:+3.4R 2025:+8.5R 2026:+1.0R
+Donchian 55/20  base   {'trades': 35, 'win': '31%', 'avgR': 0.45, 'PF': 1.75, 'net': '+16%', 'maxDD': '-11%', 'swap': '-12.0%', 'long_R': 23.7, 'short_R': -7.9}
+Donchian 55/20  stress {'trades': 35, 'win': '31%', 'avgR': 0.28, 'PF': 1.43, 'net': '+10%', 'maxDD': '-13%', 'swap': '-18.0%', 'long_R': 17.1, 'short_R': -7.4}
+                 by year: 2017:-4.4R 2018:+1.5R 2019:+4.4R 2020:+0.6R 2021:-3.2R 2022:-0.0R 2023:-3.1R 2024:+3.0R 2025:+5.6R 2026:+11.3R
+Trend D1: +17.7R vs random-entry median +6.6R -> beats 98% of 300 random runs
+Donchian 55/20: +15.7R vs random-entry median -0.7R -> beats 94% of 300 random runs
