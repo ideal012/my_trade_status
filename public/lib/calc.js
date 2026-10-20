@@ -20,14 +20,18 @@ export function pipSize(symbol) {
 
 export const pips = (t) => (isOpen(t) ? null : ((t.exit_price - t.entry_price) * dir(t)) / pipSize(t.symbol));
 
-const risk = (t) => (t.sl == null ? 0 : Math.abs(t.entry_price - t.sl));
+// Risk is measured from the SL at entry: a trailed SL must not shrink the R of the trade.
+const risk = (t) => {
+  const sl = t.initial_sl ?? t.sl;
+  return sl == null ? 0 : Math.abs(t.entry_price - sl);
+};
 
 export function plannedRR(t) {
-  return t.sl == null || t.tp == null || !risk(t) ? null : Math.abs(t.tp - t.entry_price) / risk(t);
+  return t.tp == null || !risk(t) ? null : Math.abs(t.tp - t.entry_price) / risk(t);
 }
 
 export function realizedR(t) {
-  return isOpen(t) || t.sl == null || !risk(t) ? null : ((t.exit_price - t.entry_price) * dir(t)) / risk(t);
+  return isOpen(t) || !risk(t) ? null : ((t.exit_price - t.entry_price) * dir(t)) / risk(t);
 }
 
 // ponytail: fixed UTC hour bands, ignores DST shifts of London/NY opens (about 1h error half the year).
@@ -192,7 +196,7 @@ export function groupBy(trades, keyFn) {
 // already inside the profit), times the SL distance. Unknown -> null.
 export function riskMoney(t) {
   if (t.risk_amount != null) return t.risk_amount;
-  if (isOpen(t) || t.sl == null || t.profit == null || !risk(t)) return null;
+  if (isOpen(t) || t.profit == null || !risk(t)) return null;
   const moved = (t.exit_price - t.entry_price) * dir(t);
   if (!moved) return null;
   const perUnit = t.profit / moved;

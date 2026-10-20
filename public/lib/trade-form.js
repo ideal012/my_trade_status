@@ -40,6 +40,7 @@ export function openTradeForm(trade, onSaved, equity) {
           ${field('ราคาเข้า (Entry)', 'entry_price', { value: t.entry_price, required: true })}
           ${field('Stop Loss (SL)', 'sl', { value: t.sl })}
           ${field('Take Profit (TP)', 'tp', { value: t.tp })}
+          ${field('SL เริ่มต้น — กรอกถ้าเลื่อน SL ภายหลัง (R คิดจากค่านี้)', 'initial_sl', { value: t.initial_sl })}
           ${field('เวลาเปิด', 'open_time', { type: 'datetime-local', value: t.open_time_utc ? toLocal(t.open_time_utc, tz) : nowLocal, required: true })}
           ${field('Ticket (ถ้ามี)', 'ticket', { type: 'text', value: t.ticket })}
           ${field('ความเสี่ยง ($) ถ้าโดน SL — เว้นว่างให้คำนวณจากผลไม้', 'risk_amount', { value: t.risk_amount })}
@@ -174,7 +175,7 @@ export function openTradeForm(trade, onSaved, equity) {
     const n = (v) => (v === '' || v == null ? null : Number(v));
     const t = {
       symbol: f.symbol || 'EURUSD', direction: f.direction, entry_price: n(f.entry_price),
-      sl: n(f.sl), tp: n(f.tp), exit_price: n(f.exit_price),
+      sl: n(f.sl), initial_sl: n(f.initial_sl), tp: n(f.tp), exit_price: n(f.exit_price),
       profit: n(f.profit), commission: n(f.commission) ?? 0, swap: n(f.swap) ?? 0, risk_amount: n(f.risk_amount),
     };
     if (t.entry_price == null) return;
@@ -203,7 +204,7 @@ export function openTradeForm(trade, onSaved, equity) {
     const body = {
       account_id: state.accountId,
       ticket: f.ticket, symbol: f.symbol, direction: f.direction, lot: f.lot,
-      entry_price: f.entry_price, sl: f.sl, tp: f.tp, exit_price: f.exit_price,
+      entry_price: f.entry_price, sl: f.sl, initial_sl: f.initial_sl, tp: f.tp, exit_price: f.exit_price,
       open_time_utc: f.open_time ? localToUtc(f.open_time, tz) : '',
       close_time_utc: f.close_time ? localToUtc(f.close_time, tz) : '',
       profit: f.profit, commission: f.commission, swap: f.swap,

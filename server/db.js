@@ -28,6 +28,7 @@ CREATE TABLE IF NOT EXISTS ${name} (
   source TEXT NOT NULL DEFAULT 'manual',
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
   risk_amount REAL,
+  initial_sl REAL,
   UNIQUE (account_id, ticket)
 );`;
 
@@ -74,6 +75,13 @@ function migrate(db, file) {
       db.exec('ALTER TABLE trades ADD COLUMN risk_amount REAL');
     }
     db.exec('PRAGMA user_version = 2');
+  }
+  if (version < 3) {
+    // v3: SL at entry, so R stays right after the SL is trailed (optional)
+    if (!db.prepare('PRAGMA table_info(trades)').all().some((c) => c.name === 'initial_sl')) {
+      db.exec('ALTER TABLE trades ADD COLUMN initial_sl REAL');
+    }
+    db.exec('PRAGMA user_version = 3');
   }
 }
 

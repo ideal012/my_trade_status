@@ -45,7 +45,7 @@ data/              → DB + CSV ราคา (ไม่อยู่ใน Git)
 tasks/             → plan.md, todo.md, todolist.md
 ```
 
-## Data Model (migration v3, ผ่าน `PRAGMA user_version` แบบเดิม)
+## Data Model (ผ่าน `PRAGMA user_version` แบบเดิม: v3 initial_sl · v4 kind · v5 mae/mfe · v6 cashflows — 1 task = 1 version เพื่อให้ revert ได้ทีละ task; เพิ่มคอลัมน์อย่างเดียวจึงไม่ต้อง backup ตามที่ test เดิมกำหนด)
 
 | ตาราง | เพิ่ม | หมายเหตุ |
 |---|---|---|

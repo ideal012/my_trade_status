@@ -132,3 +132,11 @@ test('risk amount is optional, must be positive', async () => {
   assert.equal((await s.call('POST', '/api/trades', sampleTrade())).json.risk_amount, null);
   assert.equal((await s.call('POST', '/api/trades', sampleTrade({ risk_amount: -1 }))).status, 400);
 });
+
+test('initial SL is optional, stored, and must be positive (task 17)', async () => {
+  const ok = await s.call('POST', '/api/trades', sampleTrade({ initial_sl: '1.09' }));
+  assert.equal(ok.status, 200);
+  assert.equal(ok.json.initial_sl, 1.09);
+  assert.equal((await s.call('POST', '/api/trades', sampleTrade())).json.initial_sl, null);
+  assert.equal((await s.call('POST', '/api/trades', sampleTrade({ initial_sl: -1 }))).status, 400);
+});

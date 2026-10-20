@@ -252,3 +252,11 @@ test('risk summary: average and trades over the limit', () => {
   assert.equal(sum.known, 2);
   assert.equal(riskSummary([], new Map(), 2).avg, null);
 });
+
+test('R uses the initial SL when the SL was trailed (task 17)', () => {
+  const trailed = T({ symbol: 'XAUUSD', entry_price: 4000, initial_sl: 3900, sl: 4050, tp: null, exit_price: 4100 });
+  close(realizedR(trailed), 1);
+  assert.equal(realizedR(T({ initial_sl: null })), realizedR(T())); // old trades keep their R
+  close(plannedRR(T({ initial_sl: 1.09 })), 1);
+  close(riskMoney(T({ initial_sl: 1.09 })), 100); // $80 over 0.008 = $10,000 per unit x 0.01
+});

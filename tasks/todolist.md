@@ -27,17 +27,17 @@
 
 ---
 
-### - [ ] Task 17: SL เริ่มต้น แยกจาก SL สุดท้าย
+### - [x] Task 17: SL เริ่มต้น แยกจาก SL สุดท้าย
 
 **Description:** `realizedR` คิดจาก `sl` ที่เก็บไว้ ถ้าไม้นั้นเลื่อน SL ตามแบบ trailing (Trend D1) ค่า R จะผิด ให้เพิ่มคอลัมน์ `initial_sl` (ใช้แบบเดียวกับที่เพิ่ม `risk_amount` ใน `db.js`) แล้วให้ R และ plannedRR ใช้ `initial_sl` ถ้ามี ถ้าไม่มีให้ใช้ `sl`
 
 **Acceptance criteria:**
-- [ ] ฟอร์มเทรดมีช่อง "SL เริ่มต้น" (ไม่บังคับ)
-- [ ] ไม้ที่ entry 4000, initial_sl 3900, sl สุดท้าย 4050, exit 4100 ได้ R = +1.0 (ไม่ใช่ +2.0)
-- [ ] ไม้เก่าที่ไม่มี initial_sl ได้ค่า R เท่าเดิม
+- [x] ฟอร์มเทรดมีช่อง "SL เริ่มต้น" (ไม่บังคับ)
+- [x] ไม้ที่ entry 4000, initial_sl 3900, sl สุดท้าย 4050, exit 4100 ได้ R = +1.0 (ไม่ใช่ +2.0)
+- [x] ไม้เก่าที่ไม่มี initial_sl ได้ค่า R เท่าเดิม
 
 **Verification:**
-- [ ] `npm test` ผ่าน (เพิ่มกรณีข้างบนใน `test/calc.test.js`)
+- [x] `npm test` ผ่าน (เพิ่มกรณีข้างบนใน `test/calc.test.js`)
 
 **Dependencies:** None · **Files:** `server/db.js`, `server/trades.js`, `public/lib/calc.js`, `public/lib/trade-form.js`, `test/calc.test.js` · **Scope:** S
 
