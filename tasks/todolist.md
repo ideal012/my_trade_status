@@ -16,12 +16,12 @@
 **Description:** repo เป็น public และ `data/journal.db`, `journal.backup-before-strategies.db`, `journal.db-journal` ถูก commit ไปแล้ว ทั้งที่ README บอกว่า `data/` ไม่ขึ้น Git ให้เพิ่ม `data/` ลง `.gitignore` แล้ว `git rm -r --cached data`
 
 **Acceptance criteria:**
-- [ ] `git status` ไม่แสดงไฟล์ใน `data/` แม้จะมีการแก้ไข
-- [ ] ไฟล์ใน `data/` บนเครื่องยังอยู่ครบ แอปยังเปิดได้
-- [ ] ตัดสินใจเรื่อง history เก่า: เปลี่ยน repo เป็น private หรือเขียน history ใหม่
+- [x] `git status` ไม่แสดงไฟล์ใน `data/` แม้จะมีการแก้ไข
+- [x] ไฟล์ใน `data/` บนเครื่องยังอยู่ครบ แอปยังเปิดได้
+- [ ] ตัดสินใจเรื่อง history เก่า: เปลี่ยน repo เป็น private หรือเขียน history ใหม่ **(รอผู้ใช้ตัดสินใจ — ไฟล์ยังอยู่ใน commit `6b87deb`)**
 
 **Verification:**
-- [ ] `git ls-files data` ไม่มีผลลัพธ์
+- [x] `git ls-files data` ไม่มีผลลัพธ์
 
 **Dependencies:** None · **Files:** `.gitignore` · **Scope:** XS
 
