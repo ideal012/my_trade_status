@@ -1,7 +1,9 @@
-import { html, setHtml, state, account, maxRisk, loadTrades, num, signed, tone, pct, makeChart, COLORS } from '../lib/ui.js';
+import { html, setHtml, state, account, api, maxRisk, loadTrades, num, signed, tone, pct, makeChart, COLORS } from '../lib/ui.js';
 import { dayKey, fmtTime, hourOf } from '../lib/time.js';
-import { drawRing, drawDaily, drawEmotion, lastTrades } from './dashboard-charts.js';
-import { stats, netPnl, inRange, equitySeries, dailyPnl, monthGrid, isOpen, riskPcts, riskSummary } from '../lib/calc.js';
+import { drawRing, drawDaily, drawEmotion, drawRHist, drawRolling, binLabel, lastTrades } from './dashboard-charts.js';
+import { stats, netPnl, inRange, equitySeries, dailyPnl, monthGrid, isOpen, riskPcts, riskSummary, rSeries, rollingMean, rHistogram } from '../lib/calc.js';
+
+const ROLL = 20;
 import { readRange, rangeFilter, rangeBar, bindRangeBar } from '../lib/range.js';
 
 const MONTHS = ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'];
@@ -37,6 +39,18 @@ export async function render(view) {
   const now = stats(all, acc.initial_capital);
   const risk = riskSummary(inside, riskPcts(all, acc.initial_capital), maxRisk());
   const cur = acc.currency;
+
+  // edge: R distribution, and expectancy of the last ROLL trades against the backtest of the same strategies
+  const rs = rSeries(inside);
+  const bins = rHistogram(rs);
+  const roll = rollingMean(rs, ROLL);
+  let ref = null;
+  if (acc.kind !== 'backtest' && state.accounts.some((a) => a.kind === 'backtest')) {
+    const btIds = new Set(state.accounts.filter((a) => a.kind === 'backtest').map((a) => a.id));
+    const used = new Set(inside.map((t) => t.strategy_id).filter((id) => id != null));
+    const btRs = rSeries((await api('/api/trades')).filter((t) => btIds.has(t.account_id) && used.has(t.strategy_id)));
+    if (btRs.length) ref = btRs.reduce((a, b) => a + b, 0) / btRs.length;
+  }
 
   setHtml(view, html`
     <div class="page-head">
@@ -94,6 +108,22 @@ export async function render(view) {
       </div>
     </div>
 
+    <div class="duo">
+      <div class="card">
+        <h2>การกระจายของ R <small class="sub">${rs.length} ไม้ที่มี R · หลังหักต้นทุนเมื่อคำนวณได้</small></h2>
+        ${rs.length ? html`<div class="chart-box short"><canvas id="rhist" role="img" aria-label="กราฟแท่งจำนวนไม้ในแต่ละช่วง R (ตัวเลขเดียวกันอยู่ในตารางด้านล่าง)"></canvas></div>
+          <details><summary>ดูเป็นตาราง</summary><table><thead><tr><th>ช่วง R</th><th class="num">จำนวนไม้</th></tr></thead>
+            <tbody>${bins.map((b) => html`<tr><td>${binLabel(b)}</td><td class="num">${b.count}</td></tr>`)}</tbody></table></details>`
+        : html`<div class="empty">ยังไม่มีไม้ที่มี SL ในช่วงนี้</div>`}
+      </div>
+      <div class="card">
+        <h2>Expectancy ${ROLL} ไม้ล่าสุด <small class="sub">${ref == null ? 'ยังไม่มี backtest ของกลยุทธ์เดียวกันให้เทียบ' : `เส้นประ = backtest ${signed(ref)}R`}</small></h2>
+        ${roll.length ? html`<div class="chart-box short"><canvas id="roll" role="img" aria-label="กราฟเส้นค่าเฉลี่ย R ของ ${ROLL} ไม้ล่าสุดเทียบกับ backtest"></canvas></div>
+          <p class="sub">ล่าสุด <b class="${tone(roll.at(-1))}">${signed(roll.at(-1))}R</b>${ref == null ? '' : html` · backtest ${signed(ref)}R`} — ถ้าเส้นทึบอยู่ต่ำกว่าเส้นประนาน ๆ edge อาจเสื่อม หรือการ execute ไม่ตรงระบบ</p>`
+        : html`<div class="empty">ต้องมีอย่างน้อย ${ROLL} ไม้ที่มี R ถึงจะเห็นเส้นนี้ (ตอนนี้ ${rs.length} ไม้)</div>`}
+      </div>
+    </div>
+
     <div class="card table-wrap">
       <div class="page-head" style="margin:14px 20px 4px"><h2>เทรดล่าสุด</h2><a href="#/trades">ดูทั้งหมด →</a></div>
       ${st.count ? html`<table><thead><tr><th>ปิดเมื่อ</th><th>คู่เงิน</th><th>ทิศทาง</th><th class="num">สุทธิ</th><th>กลยุทธ์</th><th>อารมณ์</th></tr></thead>
@@ -116,6 +146,8 @@ export async function render(view) {
     view.querySelector('.chart-box:has(#mood)').hidden = true;
     view.querySelector('#mood-empty').hidden = false;
   }
+  if (rs.length) drawRHist(view.querySelector('#rhist'), bins);
+  if (roll.length) drawRolling(view.querySelector('#roll'), roll, ROLL, ref);
   view.querySelectorAll('tr[data-day]').forEach((tr) => {
     const go = () => { location.hash = `#/trades?day=${tr.dataset.day}`; };
     tr.addEventListener('click', go);

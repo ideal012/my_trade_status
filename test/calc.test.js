@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { sqn, MIN_SAMPLE, netPnl, netR, pipSize, pips, plannedRR, realizedR, session, stats, equitySeries, rangeBounds, inRange, dailyPnl, monthGrid, groupBy, isOpen, riskMoney, riskPcts, riskSummary } from '../public/lib/calc.js';
+import { rollingMean, rHistogram, rSeries, sqn, MIN_SAMPLE, netPnl, netR, pipSize, pips, plannedRR, realizedR, session, stats, equitySeries, rangeBounds, inRange, dailyPnl, monthGrid, groupBy, isOpen, riskMoney, riskPcts, riskSummary } from '../public/lib/calc.js';
 
 const close = (a, b, eps = 1e-6) => assert.ok(Math.abs(a - b) < eps, `${a} !~ ${b}`);
 const T = (over = {}) => ({
@@ -291,4 +291,23 @@ test('groupBy adds profit factor, SQN and a small-sample flag (task 21)', () => 
   const only = groupBy([N(100, 1)], () => 'y')[0];
   assert.equal(only.profitFactor, null);
   assert.equal(only.sqn, null);
+});
+
+test('rolling mean of the last n values (task 22)', () => {
+  assert.deepEqual(rollingMean([1, 2, 3, 4], 2), [1.5, 2.5, 3.5]);
+  assert.deepEqual(rollingMean([1, 2], 3), []);
+});
+
+test('R histogram in 0.5R bins with no gaps (task 22)', () => {
+  assert.deepEqual(rHistogram([-1, -0.2, 0.3, 1.1, 1.4]), [
+    { from: -1, count: 1 }, { from: -0.5, count: 1 }, { from: 0, count: 1 }, { from: 0.5, count: 0 }, { from: 1, count: 2 },
+  ]);
+  assert.deepEqual(rHistogram([]), []);
+});
+
+test('R series follows close order and skips trades without R (task 22)', () => {
+  const rs = rSeries([N(0, 2, { exit_price: 1.095 }), N(0, 1, { exit_price: 1.105 }), N(0, 3, { sl: null })]);
+  assert.equal(rs.length, 2);
+  close(rs[0], 1);
+  close(rs[1], -1);
 });

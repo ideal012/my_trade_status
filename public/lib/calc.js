@@ -187,6 +187,32 @@ export function sqn(rs) {
   return sd ? (Math.sqrt(n) * mean) / sd : null;
 }
 
+// R of each closed trade in close order (net R when known), trades without R left out.
+export const rSeries = (trades) => byClose(trades).map(rOf).filter((r) => r != null);
+
+// Mean of each run of n consecutive values: expectancy of the last n trades as it moves.
+export function rollingMean(values, n) {
+  const out = [];
+  let sum = 0;
+  values.forEach((v, i) => {
+    sum += v - (i >= n ? values[i - n] : 0);
+    if (i >= n - 1) out.push(sum / n);
+  });
+  return out;
+}
+
+// Count of R values per bin of `width`, every bin from the lowest to the highest filled one.
+export function rHistogram(rs, width = 0.5) {
+  if (!rs.length) return [];
+  const bin = (r) => Math.floor(r / width + 1e-9);
+  const counts = new Map();
+  rs.forEach((r) => counts.set(bin(r), (counts.get(bin(r)) ?? 0) + 1));
+  const keys = [...counts.keys()];
+  const out = [];
+  for (let k = Math.min(...keys); k <= Math.max(...keys); k++) out.push({ from: k * width + 0, count: counts.get(k) ?? 0 });
+  return out;
+}
+
 // ---- grouping ----
 
 // keyFn(trade) returns one key, or an array of keys (a trade joins every group), or [] for none.

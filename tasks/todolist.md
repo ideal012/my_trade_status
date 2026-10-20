@@ -121,18 +121,18 @@
 
 ---
 
-### - [ ] Task 22: การกระจายของ R + expectancy แบบ rolling
+### - [x] Task 22: การกระจายของ R + expectancy แบบ rolling
 
 **Description:** เพิ่มกราฟ 2 ตัวในหน้าภาพรวม (Chart.js ตัวเดิม):
 1. histogram ของ R ช่องละ 0.5R
 2. เส้น expectancy เฉลี่ยของ 20 ไม้ล่าสุดเทียบกับค่าจาก backtest ของกลยุทธ์เดียวกัน ใช้ดูว่า edge กำลังเสื่อมหรือเปล่า
 
 **Acceptance criteria:**
-- [ ] ถ้ามีไม่ถึง 20 ไม้ ให้ซ่อนเส้น rolling แล้วบอกเหตุผล
-- [ ] กราฟมี `aria-label` และตัวเลขเดียวกันดูได้ในตาราง (ตามแบบหน้าวิเคราะห์)
+- [x] ถ้ามีไม่ถึง 20 ไม้ ให้ซ่อนเส้น rolling แล้วบอกเหตุผล
+- [x] กราฟมี `aria-label` และตัวเลขเดียวกันดูได้ในตาราง (ตามแบบหน้าวิเคราะห์)
 
 **Verification:**
-- [ ] `npm test` ผ่าน (ฟังก์ชัน rolling ใน calc.js)
+- [x] `npm test` ผ่าน (ฟังก์ชัน rolling ใน calc.js)
 - [ ] Manual: ธีมขาวและดำอ่านออกทั้งคู่
 
 **Dependencies:** Task 19, 21 · **Files:** `public/lib/calc.js`, `public/pages/dashboard-charts.js`, `public/pages/dashboard.js` · **Scope:** M

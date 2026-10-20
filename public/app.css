@@ -125,6 +125,9 @@ h2 small { font-weight: 400; }
 .pill.neg { background: var(--neg-soft); }
 .pill.muted { color: var(--muted); border: 1px solid currentColor; font-weight: 500; }
 tr.thin td { color: var(--muted); }
+.duo { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin: 16px 0; }
+.duo > .card { margin-top: 0; }
+.duo details { margin-top: 8px; font-size: 13px; }
 .trio { display: grid; grid-template-columns: 250px minmax(0, 1fr) minmax(0, 1fr); gap: 16px; margin: 16px 0; }
 .trio > .card, .card + .card.table-wrap { margin-top: 0; }
 .chart-box.short { height: 210px; }

@@ -49,5 +49,32 @@ export function drawEmotion(canvas, trades) {
   return true;
 }
 
+export const binLabel = (b, w = 0.5) => `${signed(b.from, 1)} ถึง ${signed(b.from + w, 1)}R`;
+
+export function drawRHist(canvas, bins) {
+  makeChart(canvas, {
+    type: 'bar',
+    data: { labels: bins.map((b) => signed(b.from, 1)), datasets: [{ data: bins.map((b) => b.count), backgroundColor: bins.map((b) => (b.from >= 0 ? COLORS.pos : COLORS.neg)), borderRadius: 3 }] },
+    options: {
+      plugins: { legend: { display: false }, tooltip: { callbacks: { title: (i) => binLabel(bins[i[0].dataIndex]), label: (i) => `${i.parsed.y} ไม้` } } },
+      scales: { x: { grid: { display: false }, title: { display: true, text: 'R (ช่องละ 0.5R)' } }, y: { ticks: { precision: 0 } } },
+    },
+  });
+}
+
+// rolling expectancy of the last n trades; ref = backtest average R drawn as a dashed line (or null)
+export function drawRolling(canvas, roll, n, ref) {
+  const datasets = [{ label: `เฉลี่ย ${n} ไม้ล่าสุด`, data: roll, borderColor: COLORS.accent, borderWidth: 2, pointRadius: 0, tension: 0.2 }];
+  if (ref != null) datasets.push({ label: 'Backtest', data: roll.map(() => ref), borderColor: COLORS.muted, borderDash: [6, 4], borderWidth: 1.5, pointRadius: 0 });
+  makeChart(canvas, {
+    type: 'line',
+    data: { labels: roll.map((_, i) => `ไม้ที่ ${i + n}`), datasets },
+    options: {
+      plugins: { legend: { display: ref != null }, tooltip: { callbacks: { label: (i) => `${i.dataset.label}: ${signed(i.parsed.y)}R` } } },
+      scales: { x: { grid: { display: false }, ticks: { maxTicksLimit: 6, maxRotation: 0 } }, y: { ticks: { callback: (v) => num(v, 2) } } },
+    },
+  });
+}
+
 export const lastTrades = (trades, n) => [...trades].sort((a, b) => b.close_time_utc.localeCompare(a.close_time_utc)).slice(0, n);
 export { netPnl };
