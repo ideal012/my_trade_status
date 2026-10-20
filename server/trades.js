@@ -4,7 +4,7 @@ import { removeUploads } from './screenshots.js';
 const COLS = [
   'account_id', 'ticket', 'symbol', 'direction', 'lot', 'entry_price', 'sl', 'tp', 'exit_price',
   'open_time_utc', 'close_time_utc', 'profit', 'commission', 'swap', 'strategy_id',
-  'checklist_done', 'tags', 'emotion', 'notes', 'source', 'risk_amount', 'initial_sl',
+  'checklist_done', 'tags', 'emotion', 'notes', 'source', 'risk_amount', 'initial_sl', 'mae', 'mfe',
 ];
 
 const toNum = (v) => (v === '' || v == null ? null : Number(v));
@@ -44,6 +44,8 @@ export function cleanTrade(db, b = {}) {
   const profit = field('profit', 'กำไร/ขาดทุน');
   const sl = field('sl', 'SL', { positive: true });
   const initial_sl = field('initial_sl', 'SL เริ่มต้น', { positive: true });
+  const mae = field('mae', 'ราคาที่แย่ที่สุด (MAE)', { positive: true });
+  const mfe = field('mfe', 'ราคาที่ดีที่สุด (MFE)', { positive: true });
   const tp = field('tp', 'TP', { positive: true });
   const commission = field('commission', 'Commission', { fallback: 0 });
   const swap = field('swap', 'Swap', { fallback: 0 });
@@ -78,6 +80,8 @@ export function cleanTrade(db, b = {}) {
     source,
     risk_amount,
     initial_sl,
+    mae,
+    mfe,
   };
 }
 

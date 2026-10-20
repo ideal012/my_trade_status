@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { rollingMean, rHistogram, rSeries, sqn, MIN_SAMPLE, netPnl, netR, pipSize, pips, plannedRR, realizedR, session, stats, equitySeries, rangeBounds, inRange, dailyPnl, monthGrid, groupBy, isOpen, riskMoney, riskPcts, riskSummary } from '../public/lib/calc.js';
+import { holdingStats, maeR, mfeR, quantile, rollingMean, rHistogram, rSeries, sqn, MIN_SAMPLE, netPnl, netR, pipSize, pips, plannedRR, realizedR, session, stats, equitySeries, rangeBounds, inRange, dailyPnl, monthGrid, groupBy, isOpen, riskMoney, riskPcts, riskSummary } from '../public/lib/calc.js';
 
 const close = (a, b, eps = 1e-6) => assert.ok(Math.abs(a - b) < eps, `${a} !~ ${b}`);
 const T = (over = {}) => ({
@@ -310,4 +310,27 @@ test('R series follows close order and skips trades without R (task 22)', () => 
   assert.equal(rs.length, 2);
   close(rs[0], 1);
   close(rs[1], -1);
+});
+
+test('holding time per win and loss: median and p90 in days (task 23)', () => {
+  const at = (d, h) => `2024-03-0${d}T${String(h).padStart(2, '0')}:00:00.000Z`;
+  const h = holdingStats([
+    N(10, 1, { open_time_utc: at(1, 0), close_time_utc: at(3, 0) }), // win 2d
+    N(10, 1, { open_time_utc: at(1, 0), close_time_utc: at(5, 0) }), // win 4d
+    N(-10, 1, { open_time_utc: at(1, 0), close_time_utc: at(1, 12) }), // loss 0.5d
+  ]);
+  close(h.win.median, 3);
+  close(h.win.p90, 3.8);
+  close(h.loss.median, 0.5);
+  assert.equal(h.win.count, 2);
+  assert.equal(holdingStats([]).win.median, null);
+  close(quantile([1, 2, 3, 4], 0.5), 2.5);
+});
+
+test('MAE / MFE in R from the initial risk (task 23)', () => {
+  const t = T({ symbol: 'XAUUSD', entry_price: 4000, initial_sl: 3900, sl: 4050, mae: 3950, mfe: 4150 });
+  close(maeR(t), 0.5);
+  close(mfeR(t), 1.5);
+  assert.equal(maeR(T()), null);
+  assert.equal(mfeR(T({ mfe: 1.2, sl: null })), null);
 });

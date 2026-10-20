@@ -140,3 +140,10 @@ test('initial SL is optional, stored, and must be positive (task 17)', async () 
   assert.equal((await s.call('POST', '/api/trades', sampleTrade())).json.initial_sl, null);
   assert.equal((await s.call('POST', '/api/trades', sampleTrade({ initial_sl: -1 }))).status, 400);
 });
+
+test('MAE / MFE prices are optional and must be positive (task 23)', async () => {
+  const ok = await s.call('POST', '/api/trades', sampleTrade({ mae: '1.097', mfe: 1.109 }));
+  assert.equal(ok.json.mae, 1.097);
+  assert.equal(ok.json.mfe, 1.109);
+  assert.equal((await s.call('POST', '/api/trades', sampleTrade({ mfe: -2 }))).status, 400);
+});

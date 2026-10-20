@@ -29,6 +29,8 @@ CREATE TABLE IF NOT EXISTS ${name} (
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
   risk_amount REAL,
   initial_sl REAL,
+  mae REAL,
+  mfe REAL,
   UNIQUE (account_id, ticket)
 );`;
 
@@ -90,6 +92,12 @@ function migrate(db, file) {
       db.exec("ALTER TABLE accounts ADD COLUMN kind TEXT NOT NULL DEFAULT 'live'");
     }
     db.exec('PRAGMA user_version = 4');
+  }
+  if (version < 5) {
+    // v5: worst (MAE) and best (MFE) price reached while the trade was open, typed by the user (optional)
+    const cols = db.prepare('PRAGMA table_info(trades)').all().map((c) => c.name);
+    for (const c of ['mae', 'mfe']) if (!cols.includes(c)) db.exec(`ALTER TABLE trades ADD COLUMN ${c} REAL`);
+    db.exec('PRAGMA user_version = 5');
   }
 }
 

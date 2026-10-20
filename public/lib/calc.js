@@ -213,6 +213,33 @@ export function rHistogram(rs, width = 0.5) {
   return out;
 }
 
+// ---- holding time and excursion ----
+
+// Linear interpolation between ranks (same as numpy's default). values need not be sorted.
+export function quantile(values, q) {
+  if (!values.length) return null;
+  const s = [...values].sort((a, b) => a - b);
+  const pos = (s.length - 1) * q;
+  const lo = Math.floor(pos);
+  return s[lo] + (s[Math.min(lo + 1, s.length - 1)] - s[lo]) * (pos - lo);
+}
+
+const holdDays = (t) => (Date.parse(t.close_time_utc) - Date.parse(t.open_time_utc)) / 86_400_000;
+
+// { win, loss }: count, median and p90 of days held, closed trades only
+export function holdingStats(trades) {
+  const closed = trades.filter((t) => !isOpen(t));
+  const part = (list) => {
+    const days = list.map(holdDays);
+    return { count: days.length, median: quantile(days, 0.5), p90: quantile(days, 0.9) };
+  };
+  return { win: part(closed.filter((t) => netPnl(t) > 0)), loss: part(closed.filter((t) => netPnl(t) <= 0)) };
+}
+
+// How far price went against (MAE) / for (MFE) the trade, in R of the initial risk.
+export const maeR = (t) => (t.mae == null || !risk(t) ? null : Math.abs(t.mae - t.entry_price) / risk(t));
+export const mfeR = (t) => (t.mfe == null || !risk(t) ? null : Math.abs(t.mfe - t.entry_price) / risk(t));
+
 // ---- grouping ----
 
 // keyFn(trade) returns one key, or an array of keys (a trade joins every group), or [] for none.

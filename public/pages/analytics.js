@@ -1,6 +1,9 @@
 import { html, raw, setHtml, state, account, api, maxRisk, loadTrades, num, signed, tone, pct, makeChart, COLORS } from '../lib/ui.js';
 import { hourOf, weekdayOf } from '../lib/time.js';
-import { groupBy, inRange, session, isOpen, riskPcts, MIN_SAMPLE } from '../lib/calc.js';
+import { groupBy, inRange, session, isOpen, riskPcts, MIN_SAMPLE, holdingStats, maeR, mfeR } from '../lib/calc.js';
+
+const dur = (d) => (d == null ? '—' : d < 1 ? `${num(d * 24, 0)} ชม.` : `${num(d, 1)} วัน`);
+const mean = (xs) => (xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : null);
 import { readRange, rangeFilter, rangeBar, bindRangeBar } from '../lib/range.js';
 
 const WEEKDAYS = ['จันทร์', 'อังคาร', 'พุธ', 'พฤหัสบดี', 'ศุกร์', 'เสาร์', 'อาทิตย์'];
@@ -48,6 +51,9 @@ export async function render(view) {
   const source = tab.allAccounts ? await api('/api/trades') : loaded;
   const trades = source.filter((t) => !isOpen(t) && inRange(t, bounds, tz));
 
+  const hold = holdingStats(trades);
+  const maes = trades.map(maeR).filter((x) => x != null);
+  const mfes = trades.map(mfeR).filter((x) => x != null);
   let rows = groupBy(trades, tab.key);
   rows = tab.order
     ? rows.sort((a, b) => tab.order.indexOf(a.key) - tab.order.indexOf(b.key))
@@ -57,6 +63,12 @@ export async function render(view) {
     <div class="page-head">
       <div><h1>วิเคราะห์</h1><p class="sub">${label} · ${trades.length} ไม้ · ดูว่าอะไรทำเงิน อะไรทำให้เสียเงิน</p></div>
       ${rangeBar(sel)}
+    </div>
+    <div class="grid mini">
+      <div class="card stat"><div class="label">ไม้ชนะถือ (มัธยฐาน · p90)</div><div class="value">${dur(hold.win.median)}</div><div class="hint">p90 ${dur(hold.win.p90)} · ${hold.win.count} ไม้</div></div>
+      <div class="card stat"><div class="label">ไม้แพ้ถือ (มัธยฐาน · p90)</div><div class="value">${dur(hold.loss.median)}</div><div class="hint">p90 ${dur(hold.loss.p90)} · ${hold.loss.count} ไม้</div></div>
+      <div class="card stat"><div class="label">MAE เฉลี่ย (ราคาวิ่งสวน)</div><div class="value">${maes.length ? `${num(mean(maes))}R` : '—'}</div><div class="hint">${maes.length ? `${maes.length} ไม้ที่กรอก MAE` : 'กรอก MAE ในฟอร์มเทรด'}</div></div>
+      <div class="card stat"><div class="label">MFE เฉลี่ย (ราคาวิ่งไปทางกำไร)</div><div class="value">${mfes.length ? `${num(mean(mfes))}R` : '—'}</div><div class="hint">${mfes.length ? `${mfes.length} ไม้ที่กรอก MFE` : 'กรอก MFE ในฟอร์มเทรด'}</div></div>
     </div>
     <div class="tabs">${tabs.map((x) => html`<button class="seg ${x.id === tab.id ? 'active' : ''}" data-tab="${x.id}">${x.label}</button>`)}</div>
     ${rows.length ? html`

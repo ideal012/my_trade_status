@@ -50,6 +50,10 @@ export function openTradeForm(trade, onSaved, equity) {
       <fieldset><legend>② ผลลัพธ์</legend>
         <p class="sub" style="margin:0 0 8px">ยังไม่ปิดไม้? เว้นราคาออก เวลาปิด และกำไรไว้ก่อน แล้วกลับมาแก้ตอนปิด</p>
         <div class="fields">
+          ${field('MAE — ราคาที่แย่ที่สุดระหว่างถือ (ไม่บังคับ)', 'mae', { value: t.mae })}
+          ${field('MFE — ราคาที่ดีที่สุดระหว่างถือ (ไม่บังคับ)', 'mfe', { value: t.mfe })}
+        </div>
+        <div class="fields">
           ${field('ราคาออก (Exit)', 'exit_price', { value: t.exit_price })}
           ${field('เวลาปิด', 'close_time', { type: 'datetime-local', value: t.close_time_utc ? toLocal(t.close_time_utc, tz) : '' })}
           ${field('กำไร/ขาดทุน (ไม่รวมค่าธรรมเนียม)', 'profit', { value: t.profit })}
@@ -210,7 +214,7 @@ export function openTradeForm(trade, onSaved, equity) {
       profit: f.profit, commission: f.commission, swap: f.swap,
       strategy_id: f.strategy_id || null,
       checklist_done: new FormData(form).getAll('ck').map(Number),
-      tags: f.tags, emotion: f.emotion, notes: f.notes, risk_amount: f.risk_amount,
+      tags: f.tags, emotion: f.emotion, notes: f.notes, risk_amount: f.risk_amount, mae: f.mae, mfe: f.mfe,
     };
     try {
       const saved = await api(trade ? `/api/trades/${trade.id}` : '/api/trades', { method: trade ? 'PUT' : 'POST', body });
