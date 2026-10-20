@@ -43,16 +43,16 @@
 
 ---
 
-### - [ ] Task 18: R สุทธิหลังหัก swap และ commission
+### - [x] Task 18: R สุทธิหลังหัก swap และ commission
 
 **Description:** `realizedR` ตอนนี้คิดจากราคาอย่างเดียว ไม่รวม swap และ commission แต่สำหรับ XAUUSD ที่ถือหลายวัน swap กินกำไรเกือบครึ่ง ให้เพิ่ม `netR(t) = netPnl(t) / riskMoney(t)` แล้วให้ R เฉลี่ยในหน้าภาพรวมและหน้าวิเคราะห์ใช้ netR เมื่อคำนวณได้
 
 **Acceptance criteria:**
-- [ ] ไม้ risk $100, profit +$150, swap −$40 ได้ netR = +1.1
-- [ ] ถ้า riskMoney คำนวณไม่ได้ ให้ใช้ realizedR แบบเดิม และแสดงว่าเป็นค่าก่อนหักต้นทุน
+- [x] ไม้ risk $100, profit +$150, swap −$40 ได้ netR = +1.1
+- [x] ถ้า riskMoney คำนวณไม่ได้ ให้ใช้ realizedR แบบเดิม และแสดงว่าเป็นค่าก่อนหักต้นทุน
 
 **Verification:**
-- [ ] `npm test` ผ่าน
+- [x] `npm test` ผ่าน
 
 **Dependencies:** Task 17 · **Files:** `public/lib/calc.js`, `public/pages/dashboard.js`, `public/pages/analytics.js`, `test/calc.test.js` · **Scope:** S
 

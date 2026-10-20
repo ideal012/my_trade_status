@@ -63,7 +63,7 @@ export async function render(view) {
         <ul class="kv">
           <li><span>กำไรเฉลี่ยต่อไม้ชนะ</span><b class="pos">${signed(st.avgWin)}</b></li>
           <li><span>ขาดทุนเฉลี่ยต่อไม้แพ้</span><b class="neg">${signed(st.avgLoss)}</b></li>
-          <li><span>R เฉลี่ย<small>เท่าของความเสี่ยง (ต้องมี SL)</small></span><b class="${tone(st.avgR)}">${st.avgR == null ? '—' : signed(st.avgR)}</b></li>
+          <li><span>R เฉลี่ย<small>หลังหัก swap/commission (ต้องมี SL)${st.rGross ? ` · ${st.rGross} ไม้ก่อนหักต้นทุน` : ''}</small></span><b class="${tone(st.avgR)}">${st.avgR == null ? '—' : signed(st.avgR)}</b></li>
           <li><span>Expectancy ต่อไม้</span><b class="${tone(st.expectancy)}">${signed(st.expectancy)}</b></li>
           <li><span>Max Drawdown<small>${st.count ? `−${num(st.maxDrawdown.pct)}% จากจุดสูงสุด` : ''}</small></span><b class="${st.maxDrawdown.amount ? 'neg' : ''}">${st.count ? `−${num(st.maxDrawdown.amount)}` : '—'}</b></li>
           <li><span>ชนะติดกันสูงสุด</span><b>${st.maxWinStreak} ไม้</b></li>

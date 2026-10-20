@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { netPnl, pipSize, pips, plannedRR, realizedR, session, stats, equitySeries, rangeBounds, inRange, dailyPnl, monthGrid, groupBy, isOpen, riskMoney, riskPcts, riskSummary } from '../public/lib/calc.js';
+import { netPnl, netR, pipSize, pips, plannedRR, realizedR, session, stats, equitySeries, rangeBounds, inRange, dailyPnl, monthGrid, groupBy, isOpen, riskMoney, riskPcts, riskSummary } from '../public/lib/calc.js';
 
 const close = (a, b, eps = 1e-6) => assert.ok(Math.abs(a - b) < eps, `${a} !~ ${b}`);
 const T = (over = {}) => ({
@@ -259,4 +259,19 @@ test('R uses the initial SL when the SL was trailed (task 17)', () => {
   assert.equal(realizedR(T({ initial_sl: null })), realizedR(T())); // old trades keep their R
   close(plannedRR(T({ initial_sl: 1.09 })), 1);
   close(riskMoney(T({ initial_sl: 1.09 })), 100); // $80 over 0.008 = $10,000 per unit x 0.01
+});
+
+test('net R counts swap and commission (task 18)', () => {
+  close(netR(T({ risk_amount: 100, profit: 150, swap: -40, commission: 0 })), 1.1);
+  close(netR(T()), 79 / 50); // derived risk: $80 / 0.008 x 0.005 = $50, net $79
+  assert.equal(netR(T({ sl: null })), null);
+  assert.equal(netR(T({ exit_price: null, profit: null })), null);
+});
+
+test('average R prefers net R and counts trades that fall back to gross R (task 18)', () => {
+  const st = stats([N(100, 1, { exit_price: 1.105, swap: -20 }), N(0, 2, { exit_price: 1.105 })], 1000);
+  close(st.avgR, (0.8 + 1) / 2); // first: (100 - 20) / 100; second has no derivable risk -> gross +1R
+  assert.equal(st.rGross, 1);
+  const g = groupBy([N(100, 1, { exit_price: 1.105, swap: -20 })], () => 'x')[0];
+  close(g.avgR, 0.8);
 });

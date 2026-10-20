@@ -34,6 +34,16 @@ export function realizedR(t) {
   return isOpen(t) || !risk(t) ? null : ((t.exit_price - t.entry_price) * dir(t)) / risk(t);
 }
 
+// R after commission and swap: net P/L over the money at risk. null when the money at risk is unknown.
+export function netR(t) {
+  const money = riskMoney(t);
+  const net = netPnl(t);
+  return money == null || net == null ? null : net / money;
+}
+
+// Net R when known, otherwise the gross (price-only) R.
+const rOf = (t) => netR(t) ?? realizedR(t);
+
 // ponytail: fixed UTC hour bands, ignores DST shifts of London/NY opens (about 1h error half the year).
 export function session(openIso) {
   const h = new Date(openIso).getUTCHours();
@@ -78,7 +88,8 @@ export function stats(trades, initial) {
   const grossWin = sum(wins);
   const grossLoss = sum(losses);
   const net = sum(nets);
-  const rs = sorted.map(realizedR).filter((r) => r != null);
+  const rs = sorted.map(rOf).filter((r) => r != null);
+  const rGross = sorted.filter((t) => netR(t) == null && realizedR(t) != null).length;
 
   let maxWinStreak = 0;
   let maxLossStreak = 0;
@@ -105,6 +116,7 @@ export function stats(trades, initial) {
     avgWin: wins.length ? grossWin / wins.length : null,
     avgLoss: losses.length ? grossLoss / losses.length : null,
     avgR: rs.length ? sum(rs) / rs.length : null,
+    rGross, // trades in avgR whose R is before commission and swap
     expectancy: nets.length ? net / nets.length : null,
     maxDrawdown: maxDrawdown(equitySeries(trades, initial)),
     maxWinStreak,
@@ -175,7 +187,7 @@ export function groupBy(trades, keyFn) {
   }
   return [...groups].map(([key, list]) => {
     const nets = list.map(netPnl);
-    const rs = list.map(realizedR).filter((r) => r != null);
+    const rs = list.map(rOf).filter((r) => r != null);
     const net = nets.reduce((a, b) => a + b, 0);
     return {
       key,
