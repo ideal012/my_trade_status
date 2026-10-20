@@ -4,7 +4,10 @@ Signals use bar-t close, fills at bar t+1 open (no look-ahead). Prices are Bid; 
 import sys
 import numpy as np, pandas as pd
 
-CSV = sys.argv[1] if len(sys.argv) > 1 else 'data/XAUUSD_D1.csv'
+ARGS = sys.argv[1:]
+EXPORT = ARGS[ARGS.index('--export') + 1] if '--export' in ARGS else None
+CSV = next((a for a in ARGS if not a.startswith('--') and a != EXPORT), 'data/XAUUSD_D1.csv')
+IS_END = pd.Timestamp('2022-12-31')  # in-sample up to here, out-of-sample after; parameters are never tuned on OOS
 POINT, CONTRACT = 0.01, 100
 SWAP_LONG_PTS, SWAP_SHORT_PTS = -77.91, 22.16          # per lot per night (Eightcap, 19 Oct 2026)
 CAPITAL, RISK = 10_000, 0.01                             # fixed $100 risk per trade, no compounding
@@ -50,16 +53,17 @@ def run(df, s, swap_x=1.0, spr_x=1.0):
     # real swap tracked USD rates (near zero 2020-21), so early years are over-charged. Upgrade: historical rate series.
     ref = df.close.iloc[-1]
     sw = {1: SWAP_LONG_PTS * POINT / ref * swap_x, -1: SWAP_SHORT_PTS * POINT / ref * swap_x}  # fraction of price per night
-    pos = oz = entry = stop = swp = 0.0; pend = None; trades = []; eq = []; realized = 0.0
+    pos = oz = entry = stop = swp = sl0 = 0.0; t_in = None; pend = None; trades = []; eq = []; realized = 0.0
     def close_at(px, t):
         nonlocal pos, realized
         pnl = oz * (px - entry) * pos - oz * spr[t] + swp
-        trades.append((df.index[t], int(pos), pnl, swp)); realized += pnl; pos = 0
+        trades.append((df.index[t], int(pos), pnl, swp, t_in, entry, sl0, px, oz)); realized += pnl; pos = 0
     for t in range(len(df)):
         if pend == 'exit': close_at(o[t], t)
         elif pend in (1, -1) and atr[t - 1] > 0:
             pos, entry, swp = pend, o[t], 0.0
-            stop = entry - pos * s['k'] * atr[t - 1]
+            stop = sl0 = entry - pos * s['k'] * atr[t - 1]
+            t_in = df.index[t]
             oz = CAPITAL * RISK / (s['k'] * atr[t - 1])
         pend = None
         if pos > 0 and l[t] <= stop: close_at(min(o[t], stop), t)
@@ -72,7 +76,42 @@ def run(df, s, swap_x=1.0, spr_x=1.0):
             pend = 1 if le[t] else -1 if se[t] else None
         eq.append(realized + (oz * (c[t] - entry) * pos + swp if pos else 0))
     if pos: close_at(c[-1], len(df) - 1)
-    return pd.DataFrame(trades, columns=['date', 'side', 'pnl', 'swap']), pd.Series(eq, df.index)
+    cols = ['date', 'side', 'pnl', 'swap', 'entry_date', 'entry', 'initial_sl', 'exit', 'oz']  # date = exit date
+    return pd.DataFrame(trades, columns=cols), pd.Series(eq, df.index)
+
+def sqn(rs):  # sqrt(n) x mean / sample sd; equals the t-stat of the mean R
+    rs = np.asarray(rs, float)
+    if len(rs) < 2 or rs.std(ddof=1) == 0: return None
+    return float(np.sqrt(len(rs)) * rs.mean() / rs.std(ddof=1))
+
+def long_only(s):
+    return {**s, 'se': s['se'] & False}
+
+def summary(tr):
+    if tr.empty: return dict(trades=0)
+    r = tr.pnl / (CAPITAL * RISK)
+    w, ls = tr.pnl[tr.pnl > 0].sum(), -tr.pnl[tr.pnl < 0].sum()
+    q = sqn(r)
+    return dict(trades=len(tr), avgR=round(float(r.mean()), 2), sumR=round(float(r.sum()), 1),
+                PF=round(float(w / ls), 2) if ls else 'inf', SQN=None if q is None else round(q, 2))
+
+def holding(tr):
+    days = (tr.date - tr.entry_date).dt.days
+    win = tr.pnl > 0
+    f = lambda d: f"median {d.median():.0f}d, p90 {d.quantile(.9):.0f}d" if len(d) else '-'
+    return f"wins {f(days[win])} | losses {f(days[~win])}"
+
+def export(df_trades, path):
+    rows = []
+    for name, slug, tr in df_trades:
+        for x in tr.itertuples():
+            rows.append(dict(ticket=f"{slug}-{x.entry_date:%Y-%m-%d}", symbol='XAUUSD', direction='buy' if x.side > 0 else 'sell',
+                             lot=round(x.oz / CONTRACT, 6), entry_price=round(x.entry, 2), initial_sl=round(x.initial_sl, 2),
+                             exit_price=round(x.exit, 2), open_time_utc=f"{x.entry_date:%Y-%m-%d}T00:00:00Z",
+                             close_time_utc=f"{x.date:%Y-%m-%d}T00:00:00Z", profit=round(x.pnl - x.swap, 2),
+                             swap=round(x.swap, 2), commission=0, risk_amount=CAPITAL * RISK, strategy=name))
+    pd.DataFrame(rows).to_csv(path, index=False)
+    return len(rows)
 
 def stats(tr, eq):
     if tr.empty: return dict(trades=0)
@@ -114,3 +153,17 @@ if __name__ == '__main__':
         sims = np.array([run(df, signals_random(df, p, rng, f))[0].pnl.sum() / 100 for _ in range(300)])
         r = res[(name, 'base')].pnl.sum() / 100
         print(f"{name}: {r:+.1f}R vs random-entry median {np.median(sims):+.1f}R -> beats {(sims < r).mean():.0%} of 300 random runs")
+
+    assert abs(sqn([1, -1, 2, -1, 1]) - 0.6667) < 1e-4 and sqn([1]) is None and sqn([1, 1]) is None
+    print(f"\nValidation (base costs) — in-sample <= {IS_END.date()} < out-of-sample, split by entry date")
+    out = []
+    for name, slug, f in [('Trend Following D1 (MA + TSMOM)', 'trend-d1', signals_trend),
+                          ('Donchian / Turtle Breakout 55/20', 'donchian-55-20', signals_donchian)]:
+        for tag, s in [('long+short', f(df)), ('long-only', long_only(f(df)))]:
+            tr, _ = run(df, s)
+            ins, oos = tr[tr.entry_date <= IS_END], tr[tr.entry_date > IS_END]
+            print(f"{name[:22]:22} {tag:10} IS {summary(ins)} | OOS {summary(oos)}")
+            if tag == 'long-only': out.append((name, slug, tr))
+        print(' ' * 23, 'holding (long+short):', holding(run(df, f(df))[0]))
+    if EXPORT:
+        print(f"exported {export(out, EXPORT)} long-only trades -> {EXPORT}")

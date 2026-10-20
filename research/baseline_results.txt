@@ -8,3 +8,11 @@ Donchian 55/20  stress {'trades': 35, 'win': '31%', 'avgR': 0.28, 'PF': 1.43, 'n
                  by year: 2017:-4.4R 2018:+1.5R 2019:+4.4R 2020:+0.6R 2021:-3.2R 2022:-0.0R 2023:-3.1R 2024:+3.0R 2025:+5.6R 2026:+11.3R
 Trend D1: +17.7R vs random-entry median +6.6R -> beats 98% of 300 random runs
 Donchian 55/20: +15.7R vs random-entry median -0.7R -> beats 94% of 300 random runs
+
+Validation (base costs) — in-sample <= 2022-12-31 < out-of-sample, split by entry date
+Trend Following D1 (MA long+short IS {'trades': 96, 'avgR': 0.06, 'sumR': 5.8, 'PF': 1.37, 'SQN': 0.8} | OOS {'trades': 92, 'avgR': 0.13, 'sumR': 12.0, 'PF': 2.09, 'SQN': 1.44}
+Trend Following D1 (MA long-only  IS {'trades': 64, 'avgR': 0.08, 'sumR': 5.4, 'PF': 1.5, 'SQN': 0.8} | OOS {'trades': 91, 'avgR': 0.13, 'sumR': 12.0, 'PF': 2.1, 'SQN': 1.45}
+                        holding (long+short): wins median 1d, p90 60d | losses median 2d, p90 19d
+Donchian / Turtle Brea long+short IS {'trades': 22, 'avgR': -0.01, 'sumR': -0.3, 'PF': 0.98, 'SQN': -0.04} | OOS {'trades': 13, 'avgR': 1.23, 'sumR': 16.1, 'PF': 3.04, 'SQN': 1.01}
+Donchian / Turtle Brea long-only  IS {'trades': 12, 'avgR': 0.23, 'sumR': 2.8, 'PF': 1.46, 'SQN': 0.44} | OOS {'trades': 8, 'avgR': 2.61, 'sumR': 20.9, 'PF': 7.92, 'SQN': 1.4}
+                        holding (long+short): wins median 94d, p90 149d | losses median 22d, p90 69d

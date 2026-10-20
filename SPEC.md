@@ -70,7 +70,9 @@ tasks/             → plan.md, todo.md, todolist.md
 ## CSV import (Task 20)
 
 Header ตายตัว:
-`ticket,symbol,direction,lot,entry_price,initial_sl,exit_price,open_time_utc,close_time_utc,profit,swap,commission,strategy`
+`ticket,symbol,direction,lot,entry_price,initial_sl,exit_price,open_time_utc,close_time_utc,profit,swap,commission,risk_amount,strategy`
+
+- `profit` = กำไรจากราคาหลังหัก spread (ไม่รวม swap) · `risk_amount` = เงินที่เสี่ยงต่อไม้จาก backtest ทำให้ net R ตรงกับ Python พอดี
 
 - `ticket` สร้างแบบ deterministic จาก baseline.py (เช่น `trend-d1-2019-03-05`) ใช้กันซ้ำผ่าน `UNIQUE(account_id, ticket)` เดิม
 - เวลาเป็น ISO UTC; import ได้เฉพาะบัญชี `kind = backtest` (อื่นตอบ 400)

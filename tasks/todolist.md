@@ -83,7 +83,7 @@
 
 ### - [ ] Task 20: Import ไม้จาก backtest (CSV)
 
-**Description:** ให้ `research/baseline.py` export รายการไม้เป็น CSV มีคอลัมน์ `symbol,direction,lot,entry_price,initial_sl,exit_price,open_time_utc,close_time_utc,profit,swap,commission,strategy` แล้วเพิ่มตัวอ่าน CSV ในหน้า Import ที่นำเข้าไปยังบัญชีประเภท backtest
+**Description:** ให้ `research/baseline.py` export รายการไม้เป็น CSV มีคอลัมน์ตาม `SPEC.md` (เพิ่ม `ticket` และ `risk_amount`) แล้วเพิ่มตัวอ่าน CSV ในหน้า Import ที่นำเข้าไปยังบัญชีประเภท backtest
 
 **Acceptance criteria:**
 - [ ] `python research/baseline.py --export trades_trend.csv` สร้างไฟล์ได้
@@ -176,16 +176,16 @@
 
 ## Phase 9: Research (Python, ไม่แตะเว็บ)
 
-### - [ ] Task 25: เติม baseline.py ให้ครบเกณฑ์ validation
+### - [x] Task 25: เติม baseline.py ให้ครบเกณฑ์ validation
 
 **Description:** เพิ่มใน `research/baseline.py`: ระยะเวลาถือ (มัธยฐาน / p90), t-stat และ SQN ของ R, การแบ่ง in-sample 2017–2022 กับ out-of-sample 2023–2026 โดยไม่ปรับพารามิเตอร์ และการรันแบบ long-only
 
 **Acceptance criteria:**
-- [ ] พิมพ์ผล IS กับ OOS แยกกันสำหรับ Trend D1 และ Donchian
-- [ ] assert เดิม (swap 3 เท่าวันพุธ) ยังผ่าน และเพิ่ม assert ของ SQN
+- [x] พิมพ์ผล IS กับ OOS แยกกันสำหรับ Trend D1 และ Donchian
+- [x] assert เดิม (swap 3 เท่าวันพุธ) ยังผ่าน และเพิ่ม assert ของ SQN
 
 **Verification:**
-- [ ] `python research/baseline.py` รันจบโดยไม่มี error และผลตรงกับ `baseline_results.txt` ส่วนที่ไม่ได้แก้
+- [x] `python research/baseline.py` รันจบโดยไม่มี error และผลตรงกับ `baseline_results.txt` ส่วนที่ไม่ได้แก้
 
 **Dependencies:** None · **Files:** `research/baseline.py`, `research/baseline_results.txt` · **Scope:** S
 
