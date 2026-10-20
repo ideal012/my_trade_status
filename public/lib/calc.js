@@ -173,6 +173,20 @@ export function monthGrid(year, month) {
   return cells;
 }
 
+// ---- edge reliability ----
+
+// Below this many trades a group's numbers are mostly noise.
+export const MIN_SAMPLE = 30;
+
+// System Quality Number = sqrt(n) x mean / sample sd. Same value as the t-statistic of the mean R.
+export function sqn(rs) {
+  const n = rs.length;
+  if (n < 2) return null;
+  const mean = rs.reduce((a, b) => a + b, 0) / n;
+  const sd = Math.sqrt(rs.reduce((a, r) => a + (r - mean) ** 2, 0) / (n - 1));
+  return sd ? (Math.sqrt(n) * mean) / sd : null;
+}
+
 // ---- grouping ----
 
 // keyFn(trade) returns one key, or an array of keys (a trade joins every group), or [] for none.
@@ -189,6 +203,8 @@ export function groupBy(trades, keyFn) {
     const nets = list.map(netPnl);
     const rs = list.map(rOf).filter((r) => r != null);
     const net = nets.reduce((a, b) => a + b, 0);
+    const grossWin = nets.filter((n) => n > 0).reduce((a, b) => a + b, 0);
+    const grossLoss = -nets.filter((n) => n < 0).reduce((a, b) => a + b, 0);
     return {
       key,
       count: list.length,
@@ -197,6 +213,9 @@ export function groupBy(trades, keyFn) {
       net,
       avgNet: net / list.length,
       avgR: rs.length ? rs.reduce((a, b) => a + b, 0) / rs.length : null,
+      profitFactor: grossWin && grossLoss ? grossWin / grossLoss : null,
+      sqn: sqn(rs),
+      small: list.length < MIN_SAMPLE,
     };
   });
 }

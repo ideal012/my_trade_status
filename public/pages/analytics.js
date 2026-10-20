@@ -1,6 +1,6 @@
 import { html, raw, setHtml, state, account, maxRisk, loadTrades, num, signed, tone, pct, makeChart, COLORS } from '../lib/ui.js';
 import { hourOf, weekdayOf } from '../lib/time.js';
-import { groupBy, inRange, session, isOpen, riskPcts } from '../lib/calc.js';
+import { groupBy, inRange, session, isOpen, riskPcts, MIN_SAMPLE } from '../lib/calc.js';
 import { readRange, rangeFilter, rangeBar, bindRangeBar } from '../lib/range.js';
 
 const WEEKDAYS = ['จันทร์', 'อังคาร', 'พุธ', 'พฤหัสบดี', 'ศุกร์', 'เสาร์', 'อาทิตย์'];
@@ -52,15 +52,18 @@ export async function render(view) {
     <div class="tabs">${tabs.map((x) => html`<button class="seg ${x.id === tab.id ? 'active' : ''}" data-tab="${x.id}">${x.label}</button>`)}</div>
     ${rows.length ? html`
       ${tab.note ? html`<p class="sub">${tab.note}</p>` : ''}
+      <p class="sub">SQN = √จำนวนไม้ × R เฉลี่ย ÷ SD ของ R (เท่ากับ t-stat) — ตั้งแต่ 2 ขึ้นไปถือว่า edge เริ่มน่าเชื่อ · กลุ่มที่มีไม่ถึง ${MIN_SAMPLE} ไม้แสดงเป็นสีจาง</p>
       <div class="card"><div class="chart-box"><canvas id="bars" role="img" aria-label="กราฟแท่งกำไรสุทธิแยกตามกลุ่มที่เลือก (ตัวเลขเดียวกันอยู่ในตารางด้านล่าง)"></canvas></div></div>
       <div class="card table-wrap">
         <table>
-          <thead><tr><th>${tab.label}</th><th class="num">จำนวนไม้</th><th class="num">Winrate</th><th class="num">กำไรสุทธิ</th><th class="num">เฉลี่ย/ไม้</th><th class="num">R เฉลี่ย</th></tr></thead>
-          <tbody>${rows.map((r) => html`<tr>
-            <td><b>${r.key}</b></td><td class="num">${r.count}</td><td class="num">${pct(r.winrate)}</td>
+          <thead><tr><th>${tab.label}</th><th class="num">จำนวนไม้</th><th class="num">Winrate</th><th class="num">กำไรสุทธิ</th><th class="num">เฉลี่ย/ไม้</th><th class="num">R เฉลี่ย</th><th class="num">PF</th><th class="num">SQN</th></tr></thead>
+          <tbody>${rows.map((r) => html`<tr class="${r.small ? 'thin' : ''}">
+            <td><b>${r.key}</b>${r.small ? html`<span class="pill muted">ข้อมูลยังน้อย</span>` : ''}</td><td class="num">${r.count}</td><td class="num">${pct(r.winrate)}</td>
             <td class="num ${tone(r.net)}"><b>${signed(r.net)}</b></td>
             <td class="num ${tone(r.avgNet)}">${signed(r.avgNet)}</td>
-            <td class="num ${tone(r.avgR)}">${r.avgR == null ? '—' : signed(r.avgR)}</td></tr>`)}</tbody>
+            <td class="num ${tone(r.avgR)}">${r.avgR == null ? '—' : signed(r.avgR)}</td>
+            <td class="num">${r.profitFactor == null ? '—' : num(r.profitFactor)}</td>
+            <td class="num ${tone(r.sqn)}">${r.sqn == null ? '—' : num(r.sqn)}</td></tr>`)}</tbody>
         </table>
       </div>` : html`<div class="card empty">ยังไม่มีข้อมูลในช่วงนี้ — เพิ่มเทรดหรือเปลี่ยนช่วงเวลา</div>`}`);
 

@@ -123,6 +123,8 @@ h2 small { font-weight: 400; }
 .pill { display: inline-block; margin-left: 6px; padding: 0 8px; border-radius: 99px; font-size: 11.5px; font-weight: 600; vertical-align: 1px; }
 .pill.pos { background: var(--pos-soft); }
 .pill.neg { background: var(--neg-soft); }
+.pill.muted { color: var(--muted); border: 1px solid currentColor; font-weight: 500; }
+tr.thin td { color: var(--muted); }
 .trio { display: grid; grid-template-columns: 250px minmax(0, 1fr) minmax(0, 1fr); gap: 16px; margin: 16px 0; }
 .trio > .card, .card + .card.table-wrap { margin-top: 0; }
 .chart-box.short { height: 210px; }

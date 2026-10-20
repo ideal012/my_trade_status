@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { netPnl, netR, pipSize, pips, plannedRR, realizedR, session, stats, equitySeries, rangeBounds, inRange, dailyPnl, monthGrid, groupBy, isOpen, riskMoney, riskPcts, riskSummary } from '../public/lib/calc.js';
+import { sqn, MIN_SAMPLE, netPnl, netR, pipSize, pips, plannedRR, realizedR, session, stats, equitySeries, rangeBounds, inRange, dailyPnl, monthGrid, groupBy, isOpen, riskMoney, riskPcts, riskSummary } from '../public/lib/calc.js';
 
 const close = (a, b, eps = 1e-6) => assert.ok(Math.abs(a - b) < eps, `${a} !~ ${b}`);
 const T = (over = {}) => ({
@@ -274,4 +274,21 @@ test('average R prefers net R and counts trades that fall back to gross R (task 
   assert.equal(st.rGross, 1);
   const g = groupBy([N(100, 1, { exit_price: 1.105, swap: -20 })], () => 'x')[0];
   close(g.avgR, 0.8);
+});
+
+test('SQN uses the sample standard deviation (task 21)', () => {
+  close(sqn([1, -1, 2, -1, 1]), 0.6667, 1e-4);
+  assert.equal(sqn([1]), null);
+  assert.equal(sqn([1, 1]), null); // no spread: undefined
+  assert.equal(MIN_SAMPLE, 30);
+});
+
+test('groupBy adds profit factor, SQN and a small-sample flag (task 21)', () => {
+  const g = groupBy([N(100, 1, { exit_price: 1.105 }), N(-50, 2, { exit_price: 1.095 }), N(30, 3)], () => 'x')[0];
+  close(g.profitFactor, 130 / 50);
+  assert.ok(g.sqn != null);
+  assert.equal(g.small, true);
+  const only = groupBy([N(100, 1)], () => 'y')[0];
+  assert.equal(only.profitFactor, null);
+  assert.equal(only.sqn, null);
 });
