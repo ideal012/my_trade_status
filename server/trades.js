@@ -65,7 +65,7 @@ export function cleanTrade(db, b = {}) {
   check(Array.isArray(done) && done.every((i) => Number.isInteger(i) && i >= 0), 'ข้อมูล checklist ไม่ถูกต้อง');
 
   const ticket = b.ticket == null || b.ticket === '' ? null : String(b.ticket).trim().slice(0, 40);
-  const source = ['manual', 'mt4', 'mt5'].includes(b.source) ? b.source : 'manual';
+  const source = ['manual', 'mt4', 'mt5', 'csv-backtest'].includes(b.source) ? b.source : 'manual';
 
   if (errors.length) throw new HttpError(400, errors.join(' / '));
   return {
@@ -133,7 +133,11 @@ export function importTrades(db, body) {
   const list = body?.trades;
   if (!Array.isArray(list) || !list.length) throw new HttpError(400, 'ไม่มีเทรดให้นำเข้า');
   if (list.length > 5000) throw new HttpError(400, 'นำเข้าได้ครั้งละไม่เกิน 5,000 ไม้');
-  if (!db.prepare('SELECT 1 FROM accounts WHERE id = ?').get(Number(body.account_id))) throw new HttpError(400, 'ไม่พบบัญชีนี้');
+  const acc = db.prepare('SELECT kind FROM accounts WHERE id = ?').get(Number(body.account_id));
+  if (!acc) throw new HttpError(400, 'ไม่พบบัญชีนี้');
+  if (acc.kind !== 'backtest' && list.some((t) => t?.source === 'csv-backtest')) {
+    throw new HttpError(400, 'ไม้จาก backtest นำเข้าได้เฉพาะบัญชีประเภท Backtest (ตั้งได้ในหน้า ตั้งค่า)');
+  }
 
   const rows = list.map((t, i) => {
     if (!String(t?.ticket ?? '').trim()) throw new HttpError(400, `แถวที่ ${i + 1} ไม่มี ticket`);

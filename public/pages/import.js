@@ -1,7 +1,8 @@
 import { html, raw, setHtml, state, account, api, loadTrades, num, signed, tone, toast } from '../lib/ui.js';
 import { fmtTime } from '../lib/time.js';
 import { decodeReport, parseReport } from '../lib/import-mt.js';
-import { netPnl } from '../lib/calc.js';
+import { netPnl, netR } from '../lib/calc.js';
+import { parseBacktestCsv } from '../lib/import-csv.js';
 
 const OFFSETS = Array.from({ length: 27 }, (_, i) => i - 12); // GMT-12 .. GMT+14
 
@@ -34,7 +35,16 @@ export async function render(view) {
         </label>
       </div>
     </div>
-    <div id="result"></div>`);
+    <div id="result"></div>
+
+    <div class="card" style="margin-top:24px">
+      <h2>Import ไม้จาก backtest (CSV)</h2>
+      <p class="sub">ไฟล์จาก <code>python research/baseline.py --export ไฟล์.csv</code> · นำเข้าได้เฉพาะบัญชีประเภท Backtest เพื่อไม่ให้ปนกับไม้จริง · ชื่อกลยุทธ์ในไฟล์ต้องตรงกับในหน้า กลยุทธ์</p>
+      ${acc.kind === 'backtest'
+        ? html`<label>ไฟล์ CSV <input type="file" id="csv" accept=".csv,text/csv"></label>`
+        : html`<p class="form-error">บัญชี <b>${acc.name}</b> เป็นประเภท ${acc.kind ?? 'live'} — สร้างหรือเปลี่ยนบัญชีเป็นประเภท Backtest ในหน้า ตั้งค่า แล้วเลือกบัญชีนั้นที่มุมขวาบน</p>`}
+    </div>
+    <div id="csv-result"></div>`);
 
   const result = view.querySelector('#result');
   const offsetSel = view.querySelector('#offset');
@@ -87,6 +97,45 @@ export async function render(view) {
       }
     });
   }
+
+  const csvResult = view.querySelector('#csv-result');
+  view.querySelector('#csv')?.addEventListener('change', async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    let parsed;
+    try {
+      parsed = parseBacktestCsv(await file.text(), state.strategies);
+    } catch (err) {
+      setHtml(csvResult, html`<div class="card form-error">${err.message}</div>`);
+      return;
+    }
+    const fresh = parsed.trades.filter((t) => !existing.has(t.ticket));
+    const totalR = parsed.trades.reduce((a, t) => a + (netR(t) ?? 0), 0);
+    setHtml(csvResult, html`
+      <div class="card">
+        <h2>ตัวอย่างก่อนนำเข้า · Backtest</h2>
+        <p>พบ <b>${parsed.trades.length}</b> ไม้ — ใหม่ <b>${fresh.length}</b> · ซ้ำ ${parsed.trades.length - fresh.length} · R รวม <b class="${tone(totalR)}">${signed(totalR)}</b> (เทียบกับที่ Python พิมพ์ได้)
+          ${parsed.errors.length ? html` · <span class="neg">อ่านไม่ได้ ${parsed.errors.length} แถว</span>` : ''}</p>
+        ${parsed.errors.length ? html`<div class="form-error">${parsed.errors.map((x) => html`<div>${x}</div>`)}</div>` : ''}
+        ${parsed.warnings.length ? html`<div class="sub">${parsed.warnings.slice(0, 20).map((x) => html`<div>${x}</div>`)}${parsed.warnings.length > 20 ? html`<div>… อีก ${parsed.warnings.length - 20} แถว</div>` : ''}</div>` : ''}
+        <div class="row" style="margin-top:14px">
+          <button class="primary" id="go-csv" ${raw(fresh.length ? '' : 'disabled')}>นำเข้า ${fresh.length} ไม้ใหม่</button>
+        </div>
+      </div>`);
+    csvResult.querySelector('#go-csv')?.addEventListener('click', async (ev) => {
+      ev.target.disabled = true;
+      try {
+        const r = await api('/api/trades/import', { method: 'POST', body: { account_id: state.accountId, trades: parsed.trades } });
+        parsed.trades.forEach((t) => existing.add(t.ticket));
+        toast(`นำเข้า ${r.inserted} ไม้แล้ว`);
+        setHtml(csvResult, html`<div class="card"><h2>นำเข้าเสร็จแล้ว</h2><p>เพิ่ม <b>${r.inserted}</b> ไม้ · ข้ามที่ซ้ำ ${r.skipped} ไม้</p>
+          <p><a class="btn" href="#/analytics">ดูหน้าวิเคราะห์</a></p></div>`);
+      } catch (err) {
+        ev.target.disabled = false;
+        setHtml(csvResult, html`<div class="card form-error">${err.message}</div>`);
+      }
+    });
+  });
 
   offsetSel.addEventListener('change', show);
   view.querySelector('#file').addEventListener('change', async (e) => {

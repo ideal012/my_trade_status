@@ -81,18 +81,18 @@
 
 ---
 
-### - [ ] Task 20: Import ไม้จาก backtest (CSV)
+### - [x] Task 20: Import ไม้จาก backtest (CSV)
 
 **Description:** ให้ `research/baseline.py` export รายการไม้เป็น CSV มีคอลัมน์ตาม `SPEC.md` (เพิ่ม `ticket` และ `risk_amount`) แล้วเพิ่มตัวอ่าน CSV ในหน้า Import ที่นำเข้าไปยังบัญชีประเภท backtest
 
 **Acceptance criteria:**
-- [ ] `python research/baseline.py --export trades_trend.csv` สร้างไฟล์ได้
-- [ ] Import ไฟล์นั้นแล้วได้จำนวนไม้และ R รวมตรงกับที่ Python พิมพ์ออกมา (คลาดเคลื่อนไม่เกิน 0.1R)
-- [ ] Import ไฟล์เดิมซ้ำแล้วไม่เกิดไม้ซ้ำ
-- [ ] แถวที่อ่านไม่ได้ต้องแจ้งเป็นรายแถว ห้ามเดาค่า (หลักเดียวกับ import MT4/MT5)
+- [x] `python research/baseline.py --export trades_trend.csv` สร้างไฟล์ได้
+- [x] Import ไฟล์นั้นแล้วได้จำนวนไม้และ R รวมตรงกับที่ Python พิมพ์ออกมา (คลาดเคลื่อนไม่เกิน 0.1R — ตรวจแล้ว: Trend 17.46 vs 17.4, Donchian 23.69 vs 23.7)
+- [x] Import ไฟล์เดิมซ้ำแล้วไม่เกิดไม้ซ้ำ
+- [x] แถวที่อ่านไม่ได้ต้องแจ้งเป็นรายแถว ห้ามเดาค่า (หลักเดียวกับ import MT4/MT5)
 
 **Verification:**
-- [ ] `npm test` ผ่าน (fixture CSV 5 แถว รวมแถวเสีย 1 แถว)
+- [x] `npm test` ผ่าน (fixture CSV 5 แถว รวมแถวเสีย 1 แถว)
 
 **Dependencies:** Task 19 · **Files:** `research/baseline.py`, `public/lib/import-csv.js`, `public/pages/import.js`, `test/import.test.js`, `test/fixtures/backtest.csv` · **Scope:** M
 
