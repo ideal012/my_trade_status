@@ -38,7 +38,8 @@ CREATE TABLE IF NOT EXISTS accounts (
   name TEXT NOT NULL,
   currency TEXT NOT NULL DEFAULT 'USD',
   initial_capital REAL NOT NULL DEFAULT 0,
-  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  kind TEXT NOT NULL DEFAULT 'live'
 );
 CREATE TABLE IF NOT EXISTS strategies (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -82,6 +83,13 @@ function migrate(db, file) {
       db.exec('ALTER TABLE trades ADD COLUMN initial_sl REAL');
     }
     db.exec('PRAGMA user_version = 3');
+  }
+  if (version < 4) {
+    // v4: account kind (backtest / replay / demo / live) to compare one strategy across them
+    if (!db.prepare('PRAGMA table_info(accounts)').all().some((c) => c.name === 'kind')) {
+      db.exec("ALTER TABLE accounts ADD COLUMN kind TEXT NOT NULL DEFAULT 'live'");
+    }
+    db.exec('PRAGMA user_version = 4');
   }
 }
 

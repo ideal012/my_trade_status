@@ -48,7 +48,7 @@ test('a first-release database is backed up and migrated without losing data', (
     const cols = Object.fromEntries(db.prepare('PRAGMA table_info(trades)').all().map((c) => [c.name, c]));
     for (const c of ['exit_price', 'close_time_utc', 'profit']) assert.equal(cols[c].notnull, 0, c);
     assert.ok(cols.risk_amount, 'risk_amount column added');
-    assert.equal(db.prepare('PRAGMA user_version').get().user_version, 3);
+    assert.equal(db.prepare('PRAGMA user_version').get().user_version, 4);
     db.prepare("INSERT INTO trades (account_id, symbol, direction, lot, entry_price, open_time_utc) VALUES (1, 'GBPUSD', 'sell', 1, 1.3, '2024-02-01T00:00:00.000Z')").run();
 
     // foreign keys still hold after the rebuild
@@ -106,5 +106,20 @@ test('a version-2 database gets the initial SL column without a rebuild (task 17
   assert.equal(db.prepare('SELECT COUNT(*) AS n FROM trades').get().n, 1);
   db.close();
   assert.throws(() => readdirSync(join(dir, 'backups')));
+  rmSync(dir, { recursive: true, force: true });
+});
+
+test('a version-3 database gets account kind = live (task 19)', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'journal-mig-'));
+  const file = join(dir, 'journal.db');
+  openDb(file).close();
+  const raw = new DatabaseSync(file);
+  raw.exec('ALTER TABLE accounts DROP COLUMN kind');
+  raw.exec('PRAGMA user_version = 3');
+  raw.close();
+  const db = openDb(file);
+  assert.equal(db.prepare('SELECT kind FROM accounts').get().kind, 'live');
+  assert.equal(db.prepare('PRAGMA user_version').get().user_version, 4);
+  db.close();
   rmSync(dir, { recursive: true, force: true });
 });

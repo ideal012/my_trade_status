@@ -6,6 +6,8 @@ const getAccount = (db, id) => {
   return row;
 };
 
+export const KINDS = ['backtest', 'replay', 'demo', 'live'];
+
 function cleanAccount(body, base = {}) {
   const b = { ...base, ...body };
   const name = String(b.name ?? '').trim().slice(0, 60);
@@ -14,7 +16,9 @@ function cleanAccount(body, base = {}) {
   if (!name) throw new HttpError(400, 'กรอกชื่อบัญชี');
   if (!/^[A-Z]{1,8}$/.test(currency)) throw new HttpError(400, 'สกุลเงินต้องเป็นตัวอักษรภาษาอังกฤษ เช่น USD');
   if (!Number.isFinite(capital) || capital < 0) throw new HttpError(400, 'ทุนเริ่มต้นต้องเป็นตัวเลขตั้งแต่ 0 ขึ้นไป');
-  return { name, currency, initial_capital: capital };
+  const kind = b.kind ?? 'live';
+  if (!KINDS.includes(kind)) throw new HttpError(400, 'ประเภทบัญชีต้องเป็น backtest, replay, demo หรือ live');
+  return { name, currency, initial_capital: capital, kind };
 }
 
 const settings = (db) => Object.fromEntries(db.prepare('SELECT key, value FROM settings').all().map((r) => [r.key, r.value]));
@@ -24,13 +28,13 @@ export function accountRoutes(db) {
     ['GET', '/api/accounts', () => db.prepare('SELECT * FROM accounts ORDER BY id').all()],
     ['POST', '/api/accounts', ({ body }) => {
       const a = cleanAccount(body ?? {});
-      const id = db.prepare('INSERT INTO accounts (name, currency, initial_capital) VALUES (:name, :currency, :initial_capital)').run(a).lastInsertRowid;
+      const id = db.prepare('INSERT INTO accounts (name, currency, initial_capital, kind) VALUES (:name, :currency, :initial_capital, :kind)').run(a).lastInsertRowid;
       return getAccount(db, Number(id));
     }],
     ['PUT', '/api/accounts/:id', ({ params, body }) => {
       const id = Number(params.id);
       const a = cleanAccount(body ?? {}, getAccount(db, id));
-      db.prepare('UPDATE accounts SET name = :name, currency = :currency, initial_capital = :initial_capital WHERE id = :id').run({ ...a, id });
+      db.prepare('UPDATE accounts SET name = :name, currency = :currency, initial_capital = :initial_capital, kind = :kind WHERE id = :id').run({ ...a, id });
       return getAccount(db, id);
     }],
     ['DELETE', '/api/accounts/:id', ({ params }) => {

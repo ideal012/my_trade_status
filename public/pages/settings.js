@@ -1,5 +1,7 @@
 import { html, setHtml, state, api, loadBase, toast, armDelete, raw } from '../lib/ui.js';
 
+const KIND_OPTIONS = [['live', 'Live (เงินจริง)'], ['demo', 'Demo'], ['replay', 'Replay (ฝึกย้อนหลัง)'], ['backtest', 'Backtest (จาก Python)']];
+
 const zones = () => {
   const all = Intl.supportedValuesOf('timeZone');
   return all.includes('UTC') ? all : ['UTC', ...all];
@@ -12,6 +14,7 @@ export async function render(view) {
         <label>ชื่อบัญชี <input name="name" value="${a?.name ?? ''}" required placeholder="เช่น Exness Real"></label>
         <label>สกุลเงิน <input name="currency" value="${a?.currency ?? 'USD'}" required maxlength="8" placeholder="USD / USC"></label>
         <label>ทุนเริ่มต้น <input name="initial_capital" type="number" step="any" min="0" value="${a?.initial_capital ?? ''}" required></label>
+        <label>ประเภท <select name="kind">${KIND_OPTIONS.map(([v, l]) => html`<option value="${v}" ${raw(v === (a?.kind ?? 'live') ? 'selected' : '')}>${l}</option>`)}</select></label>
       </div>
       <p class="form-error" hidden></p>
       <div class="row" style="margin-top:10px">

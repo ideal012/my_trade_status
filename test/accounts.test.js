@@ -54,3 +54,13 @@ test('max risk % rule is validated and saved, default 2', async () => {
   }
   assert.equal((await s.call('PUT', '/api/settings', { max_risk_pct: 1.5 })).json.max_risk_pct, '1.5');
 });
+
+test('account kind defaults to live and only takes the four kinds (task 19)', async () => {
+  const live = await s.call('POST', '/api/accounts', { name: 'Real', initial_capital: 100 });
+  assert.equal(live.json.kind, 'live');
+  const bt = await s.call('POST', '/api/accounts', { name: 'BT', initial_capital: 10000, kind: 'backtest' });
+  assert.equal(bt.json.kind, 'backtest');
+  assert.equal((await s.call('PUT', `/api/accounts/${bt.json.id}`, { initial_capital: 5 })).json.kind, 'backtest');
+  assert.equal((await s.call('PUT', `/api/accounts/${bt.json.id}`, { kind: 'replay' })).json.kind, 'replay');
+  assert.equal((await s.call('POST', '/api/accounts', { name: 'x', kind: 'paper' })).status, 400);
+});

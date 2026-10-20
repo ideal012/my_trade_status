@@ -66,16 +66,16 @@
 
 ## Phase 7: วงจร backtest → replay → demo → live
 
-### - [ ] Task 19: ประเภทบัญชี
+### - [x] Task 19: ประเภทบัญชี
 
 **Description:** เพิ่มคอลัมน์ `kind` ใน `accounts` มีค่าเป็น `backtest` / `replay` / `demo` / `live` (ค่าเริ่มต้น `live`) แล้วเพิ่มแท็บ "ประเภทบัญชี" ในหน้าวิเคราะห์ ที่รวมทุกบัญชีและแยกผลตาม kind ของกลยุทธ์ที่เลือก
 
 **Acceptance criteria:**
-- [ ] ตั้ง kind ได้ในหน้าตั้งค่า
-- [ ] เลือกกลยุทธ์ "Trend Following D1" แล้วเห็นจำนวนไม้, winrate และ R เฉลี่ย ของ backtest เทียบกับ replay, demo และ live ในตารางเดียว
+- [x] ตั้ง kind ได้ในหน้าตั้งค่า
+- [x] เลือกกลยุทธ์ "Trend Following D1" แล้วเห็นจำนวนไม้, winrate และ R เฉลี่ย ของ backtest เทียบกับ replay, demo และ live ในตารางเดียว (แท็บ "Backtest → Live" ในหน้าวิเคราะห์)
 
 **Verification:**
-- [ ] `npm test` ผ่าน (accounts + analytics grouping)
+- [x] `npm test` ผ่าน (accounts + analytics grouping)
 
 **Dependencies:** Task 18 · **Files:** `server/db.js`, `server/accounts.js`, `public/pages/settings.js`, `public/pages/analytics.js`, `test/accounts.test.js` · **Scope:** M
 

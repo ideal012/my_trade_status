@@ -1,4 +1,4 @@
-import { html, raw, setHtml, state, account, maxRisk, loadTrades, num, signed, tone, pct, makeChart, COLORS } from '../lib/ui.js';
+import { html, raw, setHtml, state, account, api, maxRisk, loadTrades, num, signed, tone, pct, makeChart, COLORS } from '../lib/ui.js';
 import { hourOf, weekdayOf } from '../lib/time.js';
 import { groupBy, inRange, session, isOpen, riskPcts, MIN_SAMPLE } from '../lib/calc.js';
 import { readRange, rangeFilter, rangeBar, bindRangeBar } from '../lib/range.js';
@@ -6,6 +6,8 @@ import { readRange, rangeFilter, rangeBar, bindRangeBar } from '../lib/range.js'
 const WEEKDAYS = ['จันทร์', 'อังคาร', 'พุธ', 'พฤหัสบดี', 'ศุกร์', 'เสาร์', 'อาทิตย์'];
 const SESSIONS = ['Asia', 'London', 'London/NY', 'New York'];
 const NONE = 'ไม่ระบุ';
+const KIND_ORDER = ['backtest', 'replay', 'demo', 'live'];
+const kindOf = (t) => state.accounts.find((a) => a.id === t.account_id)?.kind ?? 'live';
 
 const stratName = (t) => state.strategies.find((s) => s.id === t.strategy_id)?.name ?? 'ไม่ระบุกลยุทธ์';
 function checklistState(t) {
@@ -26,6 +28,12 @@ const TABS = (tz, risk) => [
   { id: 'tag', label: 'Tag', key: (t) => t.tags, note: 'ไม้หนึ่งมีได้หลาย tag จึงนับซ้ำในหลายกลุ่ม ผลรวมอาจมากกว่ากำไรรวม' },
   { id: 'emotion', label: 'อารมณ์', key: (t) => t.emotion || NONE },
   { id: 'direction', label: 'Buy vs Sell', key: (t) => (t.direction === 'buy' ? 'Buy' : 'Sell') },
+  {
+    id: 'kind', label: 'Backtest → Live', allAccounts: true,
+    key: (t) => `${stratName(t)} · ${kindOf(t)}`,
+    order: [...state.strategies.map((s) => s.name), 'ไม่ระบุกลยุทธ์'].flatMap((n) => KIND_ORDER.map((k) => `${n} · ${k}`)),
+    note: 'รวมทุกบัญชี แยกกลยุทธ์ตามประเภทบัญชี (ตั้งได้ในหน้า ตั้งค่า) — ถ้า live แย่กว่า backtest มาก ปัญหามักอยู่ที่การ execute ไม่ใช่ตัวระบบ · เลือกช่วง "ทั้งหมด" เพื่อรวมไม้ backtest ย้อนหลัง',
+  },
 ];
 
 let tabId = 'symbol';
@@ -35,9 +43,10 @@ export async function render(view) {
   const sel = readRange();
   const { bounds, label } = rangeFilter(sel, tz);
   const loaded = await loadTrades();
-  const trades = loaded.filter((t) => !isOpen(t) && inRange(t, bounds, tz));
   const tabs = TABS(tz, riskPcts(loaded, account().initial_capital));
   const tab = tabs.find((x) => x.id === tabId) ?? tabs[0];
+  const source = tab.allAccounts ? await api('/api/trades') : loaded;
+  const trades = source.filter((t) => !isOpen(t) && inRange(t, bounds, tz));
 
   let rows = groupBy(trades, tab.key);
   rows = tab.order
