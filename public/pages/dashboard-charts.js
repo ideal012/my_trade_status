@@ -49,15 +49,15 @@ export function drawEmotion(canvas, trades) {
   return true;
 }
 
-export const binLabel = (b, w = 0.5) => `${signed(b.from, 1)} ถึง ${signed(b.from + w, 1)}R`;
+export const binLabel = (b, w = 0.5) => `${signed(b.at, 1)}R (${signed(b.at - w / 2, 2)} ถึง ${signed(b.at + w / 2, 2)})`;
 
 export function drawRHist(canvas, bins) {
   makeChart(canvas, {
     type: 'bar',
-    data: { labels: bins.map((b) => signed(b.from, 1)), datasets: [{ data: bins.map((b) => b.count), backgroundColor: bins.map((b) => (b.from >= 0 ? COLORS.pos : COLORS.neg)), borderRadius: 3 }] },
+    data: { labels: bins.map((b) => signed(b.at, 1)), datasets: [{ data: bins.map((b) => b.count), backgroundColor: bins.map((b) => (b.at > 0 ? COLORS.pos : b.at < 0 ? COLORS.neg : COLORS.muted)), borderRadius: 3 }] },
     options: {
       plugins: { legend: { display: false }, tooltip: { callbacks: { title: (i) => binLabel(bins[i[0].dataIndex]), label: (i) => `${i.parsed.y} ไม้` } } },
-      scales: { x: { grid: { display: false }, title: { display: true, text: 'R (ช่องละ 0.5R)' } }, y: { ticks: { precision: 0 } } },
+      scales: { x: { grid: { display: false }, title: { display: true, text: 'R (ช่องละ 0.5R ปัดเข้าค่าใกล้สุด)' } }, y: { ticks: { precision: 0 } } },
     },
   });
 }

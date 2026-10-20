@@ -298,9 +298,10 @@ test('rolling mean of the last n values (task 22)', () => {
   assert.deepEqual(rollingMean([1, 2], 3), []);
 });
 
-test('R histogram in 0.5R bins with no gaps (task 22)', () => {
-  assert.deepEqual(rHistogram([-1, -0.2, 0.3, 1.1, 1.4]), [
-    { from: -1, count: 1 }, { from: -0.5, count: 1 }, { from: 0, count: 1 }, { from: 0.5, count: 0 }, { from: 1, count: 2 },
+test('R histogram in 0.5R bins centred on round R, no gaps (task 22)', () => {
+  // a -1R stop plus a little swap (-1.008R) must land in the -1R bin, not -1.5R
+  assert.deepEqual(rHistogram([-1.008, -0.2, 0.3, 1.1, 1.4]), [
+    { at: -1, count: 1 }, { at: -0.5, count: 0 }, { at: 0, count: 1 }, { at: 0.5, count: 1 }, { at: 1, count: 1 }, { at: 1.5, count: 1 },
   ]);
   assert.deepEqual(rHistogram([]), []);
 });

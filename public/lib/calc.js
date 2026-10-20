@@ -211,15 +211,16 @@ export function rollingMean(values, n) {
   return out;
 }
 
-// Count of R values per bin of `width`, every bin from the lowest to the highest filled one.
+// Count of R values per bin of `width` centred on multiples of width (so -1.008R counts as -1R),
+// every bin from the lowest to the highest filled one.
 export function rHistogram(rs, width = 0.5) {
   if (!rs.length) return [];
-  const bin = (r) => Math.floor(r / width + 1e-9);
+  const bin = (r) => Math.round(r / width);
   const counts = new Map();
   rs.forEach((r) => counts.set(bin(r), (counts.get(bin(r)) ?? 0) + 1));
   const keys = [...counts.keys()];
   const out = [];
-  for (let k = Math.min(...keys); k <= Math.max(...keys); k++) out.push({ from: k * width + 0, count: counts.get(k) ?? 0 });
+  for (let k = Math.min(...keys); k <= Math.max(...keys); k++) out.push({ at: k * width + 0, count: counts.get(k) ?? 0 });
   return out;
 }
 

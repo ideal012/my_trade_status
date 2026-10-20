@@ -48,9 +48,9 @@ export async function render(view) {
     <h2 style="margin-top:24px">ฝาก / ถอน · ${account().name}</h2>
     <div class="card">
       <p class="sub">เงินฝาก/ถอนเปลี่ยนทุน แต่ไม่นับเป็นกำไรหรือ drawdown · ถอนให้ใส่ติดลบ</p>
-      ${flows.length ? html`<table><thead><tr><th>เวลา</th><th class="num">จำนวน</th><th>โน้ต</th><th></th></tr></thead>
+      ${flows.length ? html`<div class="table-wrap"><table><thead><tr><th>เวลา</th><th class="num">จำนวน</th><th>โน้ต</th><th></th></tr></thead>
         <tbody>${flows.map((f) => html`<tr><td>${fmtTime(f.time_utc, tz)}</td><td class="num ${tone(f.amount)}">${signed(f.amount)}</td><td>${f.note || '—'}</td>
-          <td><button type="button" class="danger" data-flow="${f.id}">ลบ</button></td></tr>`)}</tbody></table>` : ''}
+          <td><button type="button" class="danger" data-flow="${f.id}">ลบ</button></td></tr>`)}</tbody></table></div>` : ''}
       <form id="flow-form" class="fields" style="margin-top:10px">
         <label>เวลา <input name="time" type="datetime-local" required></label>
         <label>จำนวนเงิน (ถอน = ติดลบ) <input name="amount" type="number" step="any" required></label>
