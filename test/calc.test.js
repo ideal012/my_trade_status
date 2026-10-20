@@ -334,3 +334,17 @@ test('MAE / MFE in R from the initial risk (task 23)', () => {
   assert.equal(maeR(T()), null);
   assert.equal(mfeR(T({ mfe: 1.2, sl: null })), null);
 });
+
+test('deposits and withdrawals move equity but not drawdown (task 24)', () => {
+  const trades = [N(100, 1), N(-50, 3)];
+  const flows = [{ time_utc: '2024-03-02T00:00:00.000Z', amount: 1000 }, { time_utc: '2024-03-04T00:00:00.000Z', amount: -200 }];
+  const plain = stats(trades, 1000);
+  const st = stats(trades, 1000, flows);
+  assert.equal(st.maxDrawdown.amount, plain.maxDrawdown.amount); // 50 either way
+  close(st.maxDrawdown.pct, (50 / 2100) * 100); // against equity incl. the deposit before the loss
+  close(st.equity, 1000 + 50 + 1000 - 200);
+  close(st.growthPct, (50 / 1800) * 100);
+  const eq = equitySeries(trades, 1000, flows);
+  assert.deepEqual(eq.map((p) => p.equity), [1000, 1100, 2050]);
+  close(plain.maxDrawdown.pct, (50 / 1100) * 100); // unchanged without cash flows
+});

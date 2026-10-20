@@ -1,4 +1,5 @@
-import { html, setHtml, state, api, loadBase, toast, armDelete, raw } from '../lib/ui.js';
+import { html, setHtml, state, api, loadBase, toast, armDelete, raw, account, signed, tone } from '../lib/ui.js';
+import { fmtTime, localToUtc } from '../lib/time.js';
 
 const KIND_OPTIONS = [['live', 'Live (เงินจริง)'], ['demo', 'Demo'], ['replay', 'Replay (ฝึกย้อนหลัง)'], ['backtest', 'Backtest (จาก Python)']];
 
@@ -8,6 +9,8 @@ const zones = () => {
 };
 
 export async function render(view) {
+  const tz = state.settings.timezone;
+  const flows = await api(`/api/cashflows?account_id=${state.accountId}`);
   const accountForm = (a) => html`
     <form class="card account-form" data-id="${a?.id ?? ''}">
       <div class="fields">
@@ -42,6 +45,21 @@ export async function render(view) {
 
     <h2 style="margin-top:24px">บัญชี</h2>
     ${state.accounts.map(accountForm)}
+    <h2 style="margin-top:24px">ฝาก / ถอน · ${account().name}</h2>
+    <div class="card">
+      <p class="sub">เงินฝาก/ถอนเปลี่ยนทุน แต่ไม่นับเป็นกำไรหรือ drawdown · ถอนให้ใส่ติดลบ</p>
+      ${flows.length ? html`<table><thead><tr><th>เวลา</th><th class="num">จำนวน</th><th>โน้ต</th><th></th></tr></thead>
+        <tbody>${flows.map((f) => html`<tr><td>${fmtTime(f.time_utc, tz)}</td><td class="num ${tone(f.amount)}">${signed(f.amount)}</td><td>${f.note || '—'}</td>
+          <td><button type="button" class="danger" data-flow="${f.id}">ลบ</button></td></tr>`)}</tbody></table>` : ''}
+      <form id="flow-form" class="fields" style="margin-top:10px">
+        <label>เวลา <input name="time" type="datetime-local" required></label>
+        <label>จำนวนเงิน (ถอน = ติดลบ) <input name="amount" type="number" step="any" required></label>
+        <label>โน้ต <input name="note" maxlength="200"></label>
+        <div class="row" style="align-self:end"><button class="primary" type="submit">เพิ่มรายการ</button></div>
+      </form>
+      <p class="form-error" id="flow-error" hidden></p>
+    </div>
+
     <h2 style="margin-top:24px">เพิ่มบัญชีใหม่</h2>
     ${accountForm(null)}
 
@@ -78,6 +96,20 @@ export async function render(view) {
     await loadBase();
     toast(`ใช้โซนเวลา ${e.target.value}`);
   });
+
+  view.querySelector('#flow-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const f = Object.fromEntries(new FormData(e.target));
+    try {
+      await api('/api/cashflows', { method: 'POST', body: { account_id: state.accountId, time_utc: localToUtc(f.time, tz), amount: f.amount, note: f.note } });
+      toast('บันทึกแล้ว');
+      render(view);
+    } catch (err) { const box = view.querySelector('#flow-error'); box.textContent = err.message; box.hidden = false; }
+  });
+  view.querySelectorAll('[data-flow]').forEach((btn) => armDelete(btn, async () => {
+    await api(`/api/cashflows/${btn.dataset.flow}`, { method: 'DELETE' });
+    render(view);
+  }));
 
   view.querySelectorAll('.account-form').forEach((form) => {
     const id = form.dataset.id;

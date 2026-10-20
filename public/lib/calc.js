@@ -57,29 +57,39 @@ export function session(openIso) {
 
 const byClose = (trades) => trades.filter((t) => !isOpen(t)).sort((a, b) => a.close_time_utc.localeCompare(b.close_time_utc) || a.id - b.id);
 
+const byTime = (flows) => [...flows].sort((a, b) => a.time_utc.localeCompare(b.time_utc));
+const flowSum = (flows) => flows.reduce((s, f) => s + f.amount, 0);
+
 // Equity after each closed trade (in close order), starting from the initial capital.
-export function equitySeries(trades, initial) {
-  let equity = initial;
-  const points = [{ t: null, equity, n: 0 }];
+// Cash flows up to each close are included; `flows` on a point is their running total.
+export function equitySeries(trades, initial, cashflows = []) {
+  const fl = byTime(cashflows);
+  let pnl = 0;
+  let flows = 0;
+  let j = 0;
+  const points = [{ t: null, equity: initial, flows: 0, n: 0 }];
   byClose(trades).forEach((t, i) => {
-    equity += netPnl(t);
-    points.push({ t: t.close_time_utc, equity, n: i + 1 });
+    while (j < fl.length && fl[j].time_utc <= t.close_time_utc) flows += fl[j++].amount;
+    pnl += netPnl(t);
+    points.push({ t: t.close_time_utc, equity: initial + flows + pnl, flows, n: i + 1 });
   });
   return points;
 }
 
+// Largest fall of the profit curve (cash flows taken out), as money and as % of the equity before the fall.
 export function maxDrawdown(series) {
   let peak = -Infinity;
   let best = { amount: 0, pct: 0 };
-  for (const { equity } of series) {
-    peak = Math.max(peak, equity);
-    const amount = peak - equity;
-    if (amount > best.amount) best = { amount, pct: peak > 0 ? (amount / peak) * 100 : 0 };
+  for (const { equity, flows = 0 } of series) {
+    const perf = equity - flows;
+    peak = Math.max(peak, perf);
+    const amount = peak - perf;
+    if (amount > best.amount) best = { amount, pct: equity + amount > 0 ? (amount / (equity + amount)) * 100 : 0 };
   }
   return best;
 }
 
-export function stats(trades, initial) {
+export function stats(trades, initial, cashflows = []) {
   const sorted = byClose(trades);
   const nets = sorted.map(netPnl);
   const wins = nets.filter((n) => n > 0);
@@ -108,8 +118,8 @@ export function stats(trades, initial) {
     losses: losses.length,
     winrate: nets.length ? (wins.length / nets.length) * 100 : null,
     net,
-    equity: initial + net,
-    growthPct: initial > 0 ? (net / initial) * 100 : null,
+    equity: initial + net + flowSum(cashflows),
+    growthPct: initial + flowSum(cashflows) > 0 ? (net / (initial + flowSum(cashflows))) * 100 : null, // ponytail: not time-weighted
     grossWin,
     grossLoss,
     profitFactor: losses.length && wins.length ? grossWin / -grossLoss : null,
@@ -118,7 +128,7 @@ export function stats(trades, initial) {
     avgR: rs.length ? sum(rs) / rs.length : null,
     rGross, // trades in avgR whose R is before commission and swap
     expectancy: nets.length ? net / nets.length : null,
-    maxDrawdown: maxDrawdown(equitySeries(trades, initial)),
+    maxDrawdown: maxDrawdown(equitySeries(trades, initial, cashflows)),
     maxWinStreak,
     maxLossStreak,
     best: sorted.reduce((b, t) => (!b || netPnl(t) > netPnl(b) ? t : b), null),
@@ -289,13 +299,16 @@ export function riskMoney(t) {
 
 // Map trade id -> risk as % of equity just before the trade opened
 // (initial capital + net of every trade that closed before that moment).
-export function riskPcts(trades, initial) {
+export function riskPcts(trades, initial, cashflows = []) {
   const closes = byClose(trades);
+  const fl = byTime(cashflows);
   const out = new Map();
   let i = 0;
+  let j = 0;
   let equity = initial;
   for (const t of [...trades].sort((a, b) => a.open_time_utc.localeCompare(b.open_time_utc))) {
     while (i < closes.length && closes[i].close_time_utc <= t.open_time_utc) equity += netPnl(closes[i++]);
+    while (j < fl.length && fl[j].time_utc <= t.open_time_utc) equity += fl[j++].amount;
     const money = riskMoney(t);
     out.set(t.id, money == null || equity <= 0 ? null : (money / equity) * 100);
   }

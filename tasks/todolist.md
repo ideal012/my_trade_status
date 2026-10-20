@@ -154,16 +154,16 @@
 
 ---
 
-### - [ ] Task 24: บันทึกฝาก/ถอน
+### - [x] Task 24: บันทึกฝาก/ถอน
 
 **Description:** ตาราง `cashflows (account_id, time_utc, amount, note)` ที่ equity curve, growth % และ drawdown ใช้แทนการแก้ทุนเริ่มต้น
 
 **Acceptance criteria:**
-- [ ] ฝาก $1,000 กลางทางแล้ว drawdown ไม่เปลี่ยนเพราะการฝาก
-- [ ] ทุนปัจจุบัน = ทุนเริ่มต้น + กำไรสุทธิ + ฝาก − ถอน
+- [x] ฝาก $1,000 กลางทางแล้ว drawdown ไม่เปลี่ยนเพราะการฝาก
+- [x] ทุนปัจจุบัน = ทุนเริ่มต้น + กำไรสุทธิ + ฝาก − ถอน
 
 **Verification:**
-- [ ] `npm test` ผ่าน
+- [x] `npm test` ผ่าน
 
 **Dependencies:** None · **Files:** `server/db.js`, `server/accounts.js`, `public/lib/calc.js`, `public/pages/settings.js` · **Scope:** M
 

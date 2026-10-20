@@ -45,8 +45,8 @@ export async function render(view) {
   const tz = state.settings.timezone;
   const sel = readRange();
   const { bounds, label } = rangeFilter(sel, tz);
-  const loaded = await loadTrades();
-  const tabs = TABS(tz, riskPcts(loaded, account().initial_capital));
+  const [loaded, flows] = await Promise.all([loadTrades(), api(`/api/cashflows?account_id=${state.accountId}`)]);
+  const tabs = TABS(tz, riskPcts(loaded, account().initial_capital, flows));
   const tab = tabs.find((x) => x.id === tabId) ?? tabs[0];
   const source = tab.allAccounts ? await api('/api/trades') : loaded;
   const trades = source.filter((t) => !isOpen(t) && inRange(t, bounds, tz));

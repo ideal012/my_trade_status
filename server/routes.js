@@ -3,6 +3,7 @@ import { strategyRoutes } from './strategies.js';
 import { tradeRoutes } from './trades.js';
 import { screenshotRoutes } from './screenshots.js';
 import { exportRoutes } from './export.js';
+import { cashflowRoutes } from './cashflows.js';
 
 // Each route: [method, '/api/path/:id', async ({ params, query, body }) => object | Reply]
 export function buildRoutes(db, dataDir) {
@@ -13,5 +14,6 @@ export function buildRoutes(db, dataDir) {
     ...tradeRoutes(db, dataDir),
     ...screenshotRoutes(db, dataDir),
     ...exportRoutes(db, dataDir),
+    ...cashflowRoutes(db),
   ];
 }

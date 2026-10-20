@@ -25,7 +25,7 @@ const card = (label, value, { cls = '', hint = '', big = false, delta = null } =
 export async function render(view) {
   const tz = state.settings.timezone;
   const acc = account();
-  const loaded = await loadTrades();
+  const [loaded, flows] = await Promise.all([loadTrades(), api(`/api/cashflows?account_id=${state.accountId}`)]);
   const openCount = loaded.filter(isOpen).length;
   const all = loaded.filter((t) => !isOpen(t)); // statistics count closed trades only
   const sel = readRange();
@@ -34,10 +34,12 @@ export async function render(view) {
   const inside = all.filter((t) => inRange(t, bounds, tz));
   // capital at the start of the chosen period = initial capital + everything that closed before it
   const before = bounds?.from ? all.filter((t) => dayKey(t.close_time_utc, tz) < bounds.from) : [];
-  const startCapital = acc.initial_capital + before.reduce((s, t) => s + netPnl(t), 0);
-  const st = stats(inside, startCapital);
-  const now = stats(all, acc.initial_capital);
-  const risk = riskSummary(inside, riskPcts(all, acc.initial_capital), maxRisk());
+  const flowsBefore = bounds?.from ? flows.filter((f) => dayKey(f.time_utc, tz) < bounds.from) : [];
+  const flowsInside = flows.filter((f) => !flowsBefore.includes(f));
+  const startCapital = acc.initial_capital + before.reduce((s, t) => s + netPnl(t), 0) + flowsBefore.reduce((s, f) => s + f.amount, 0);
+  const st = stats(inside, startCapital, flowsInside);
+  const now = stats(all, acc.initial_capital, flows);
+  const risk = riskSummary(inside, riskPcts(all, acc.initial_capital, flows), maxRisk());
   const cur = acc.currency;
 
   // edge: R distribution, and expectancy of the last ROLL trades against the backtest of the same strategies
@@ -137,7 +139,7 @@ export async function render(view) {
 
     <div class="card" id="calendar"></div>`);
 
-  if (st.count) drawEquity(view.querySelector('#equity'), equitySeries(inside, startCapital), tz);
+  if (st.count) drawEquity(view.querySelector('#equity'), equitySeries(inside, startCapital, flowsInside), tz);
   if (st.count) {
     drawRing(view.querySelector('#ring'), st);
     drawDaily(view.querySelector('#daily'), inside, tz);

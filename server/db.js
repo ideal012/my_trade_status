@@ -60,6 +60,13 @@ CREATE TABLE IF NOT EXISTS screenshots (
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT NOT NULL);
+CREATE TABLE IF NOT EXISTS cashflows (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  account_id INTEGER NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
+  time_utc TEXT NOT NULL,
+  amount REAL NOT NULL,
+  note TEXT NOT NULL DEFAULT ''
+);
 `;
 
 // 'YYYYMMDD-HHmmss' (UTC) for backup file names
@@ -98,6 +105,9 @@ function migrate(db, file) {
     const cols = db.prepare('PRAGMA table_info(trades)').all().map((c) => c.name);
     for (const c of ['mae', 'mfe']) if (!cols.includes(c)) db.exec(`ALTER TABLE trades ADD COLUMN ${c} REAL`);
     db.exec('PRAGMA user_version = 5');
+  }
+  if (version < 6) {
+    db.exec('PRAGMA user_version = 6'); // v6: cashflows table (created by SCHEMA above)
   }
 }
 

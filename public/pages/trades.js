@@ -1,4 +1,4 @@
-import { html, raw, setHtml, state, account, maxRisk, loadTrades, num, signed, tone, price } from '../lib/ui.js';
+import { html, raw, setHtml, state, account, api, maxRisk, loadTrades, num, signed, tone, price } from '../lib/ui.js';
 import { fmtTime, dayKey } from '../lib/time.js';
 import { netPnl, pips, plannedRR, realizedR, session, isOpen, riskPcts, stats } from '../lib/calc.js';
 import { openTradeForm } from '../lib/trade-form.js';
@@ -12,15 +12,15 @@ function checklistText(t) {
 export async function render(view, { query }) {
   const tz = state.settings.timezone;
   const day = query.get('day');
-  const all = await loadTrades();
+  const [all, flows] = await Promise.all([loadTrades(), api(`/api/cashflows?account_id=${state.accountId}`)]);
   const symbolFilter = (query.get('symbol') ?? '').toUpperCase();
   const trades = all.filter((t) => (!day || (!isOpen(t) && dayKey(t.close_time_utc, tz) === day))
     && (!symbolFilter || t.symbol.includes(symbolFilter)));
 
   const openCount = trades.filter(isOpen).length;
   const sum = stats(trades, 0); // summary of what the table shows (closed trades only)
-  const risk = riskPcts(all, account().initial_capital);
-  const equity = stats(all, account().initial_capital).equity;
+  const risk = riskPcts(all, account().initial_capital, flows);
+  const equity = stats(all, account().initial_capital, flows).equity;
   const riskCell = (t) => {
     const p = risk.get(t.id);
     if (p == null) return '—';
