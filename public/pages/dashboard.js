@@ -242,20 +242,7 @@ function drawCalendar(view, all, tz, cur) {
       const d = new Date(Date.UTC(y, m - 1 + step, 1));
       calMonth = { y: d.getUTCFullYear(), m: d.getUTCMonth() + 1 };
     }
-    if (st.count) {
-    drawRing(view.querySelector('#ring'), st);
-    drawDaily(view.querySelector('#daily'), inside, tz);
-  }
-  if (!drawEmotion(view.querySelector('#mood'), inside)) {
-    view.querySelector('.chart-box:has(#mood)').hidden = true;
-    view.querySelector('#mood-empty').hidden = false;
-  }
-  view.querySelectorAll('tr[data-day]').forEach((tr) => {
-    const go = () => { location.hash = `#/trades?day=${tr.dataset.day}`; };
-    tr.addEventListener('click', go);
-    tr.addEventListener('keydown', (e) => { if (e.key === 'Enter') go(); });
-  });
-  drawCalendar(view, all, tz, cur);
+    drawCalendar(view, all, tz, cur);
   }));
   box.querySelectorAll('[data-day]').forEach((el) => {
     const go = () => { location.hash = `#/trades?day=${el.dataset.day}`; };
